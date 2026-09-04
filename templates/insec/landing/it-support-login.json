@@ -1,0 +1,7 @@
+{
+  "name": "INSEC - IT Support login",
+  "type": "landing",
+  "capture_credentials": true,
+  "capture_passwords": true,
+  "redirect_url": "https://itsupport.insec.in/got-phished"
+}

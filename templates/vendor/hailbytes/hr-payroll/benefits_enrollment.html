@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benefits Enrollment Deadline</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #000000;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #d0d0d0;
+        }
+        .header {
+            background-color: #00796b;
+            color: #ffffff;
+            padding: 24px 40px;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .notice-box {
+            background-color: #f1f7f6;
+            border-left: 4px solid #00796b;
+            padding: 16px;
+            margin: 24px 0;
+        }
+        .notice-box h3 {
+            margin: 0 0 8px 0;
+            color: #00574b;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .notice-box p {
+            margin: 0;
+            color: #00574b;
+            font-size: 14px;
+        }
+        .benefits-box {
+            background-color: #f8f9fa;
+            border: 1px solid #d0d0d0;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .cta-button {
+            background-color: #00796b;
+            color: #ffffff;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 24px 0;
+            font-weight: 700;
+            font-size: 14px;
+        }
+        .cta-button:hover {
+            background-color: #00574b;
+            text-decoration: none;
+            color: #ffffff;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 24px 40px;
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.5;
+            border-top: 1px solid #d0d0d0;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: #000000;
+        }
+        p {
+            line-height: 1.6;
+            color: #333333;
+            margin: 0 0 16px 0;
+        }
+        @media (max-width: 600px) {
+            .content, .footer {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Employee Benefits Enrollment</div>
+        </div>
+
+        <div class="content">
+            <div class="notice-box">
+                <h3>Action required: complete your enrollment</h3>
+                <p>Our records show your annual elections are not yet finalized.</p>
+            </div>
+
+            <h1>Complete Your Benefits Enrollment</h1>
+
+            <p>Dear {{.FirstName}} {{.LastName}},</p>
+
+            <p>Our records show you have not yet completed your annual benefits enrollment. The enrollment window closes at the end of this week. If your elections are not submitted by the deadline, your coverage will default to the standard plan until next year's open enrollment, unless you have a qualifying life event.</p>
+
+            <div class="benefits-box">
+                <p style="margin: 0; font-weight: 600;">Enrollment period: Open now</p>
+                <p style="margin: 8px 0 0 0;">Deadline: This Friday at 11:59 PM (local time)</p>
+                <p style="margin: 8px 0 0 0; color: #00796b; font-weight: 600;">Your status: Not yet submitted</p>
+            </div>
+
+            <p><strong>Benefits Available:</strong></p>
+            <ul>
+                <li>Medical, dental, and vision insurance</li>
+                <li>Life and disability insurance</li>
+                <li>401(k) retirement savings plan</li>
+                <li>Flexible spending accounts (FSA/HSA)</li>
+                <li>Paid time off and sick leave</li>
+            </ul>
+
+            <p>Your elections are managed through bswift, our benefits enrollment provider. The process takes about 15 minutes.</p>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Complete enrollment</a>
+            </p>
+
+            <p>If you need assistance, contact the HR Benefits team at benefits@bswift.com or call your HR Service Center.</p>
+
+            <p>Best regards,<br>
+            <strong>Karen Whitfield</strong><br>
+            Human Resources Benefits Team</p>
+        </div>
+
+        <div class="footer">
+            <p>This notice was sent to {{.Email}}.</p>
+            <p style="margin-top: 12px;">© 2026 HR Benefits Service Center. All rights reserved.</p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

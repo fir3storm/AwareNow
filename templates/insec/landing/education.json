@@ -1,0 +1,7 @@
+{
+  "name": "INSEC - Education / you were phished",
+  "type": "landing",
+  "capture_credentials": false,
+  "capture_passwords": false,
+  "redirect_url": ""
+}

@@ -1,66 +1,79 @@
-![gophish logo](https://raw.github.com/gophish/gophish/master/static/images/gophish_purple.png)
+# AwareNow
 
-Gophish
-=======
+AwareNow is an AwareNow-branded, Gophish-compatible security-awareness
+simulation platform. It includes the Go application, web frontend, deployment
+examples, operational scripts, and curated email and landing-page templates.
 
-![Build Status](https://github.com/gophish/gophish/workflows/CI/badge.svg) [![GoDoc](https://godoc.org/github.com/gophish/gophish?status.svg)](https://godoc.org/github.com/gophish/gophish)
+Use it only for authorized security-awareness training, internal testing, and
+other engagements for which you have explicit permission.
 
-Gophish: Open-Source Phishing Toolkit
+## Local development
 
-[Gophish](https://getgophish.com) is an open-source phishing toolkit designed for businesses and penetration testers. It provides the ability to quickly and easily setup and execute phishing engagements and security awareness training.
+Requirements: Go 1.21 or newer and Node.js with npm.
 
-### Install
+```bash
+git clone https://github.com/fir3storm/AwareNow.git
+cd AwareNow
+go test ./...
+go build
 
-Installation of Gophish is dead-simple - just download and extract the zip containing the [release for your system](https://github.com/gophish/gophish/releases/), and run the binary. Gophish has binary releases for Windows, Mac, and Linux platforms.
-
-### Building From Source
-**If you are building from source, please note that Gophish requires Go v1.10 or above!**
-
-To build Gophish from source, simply run ```git clone https://github.com/gophish/gophish.git``` and ```cd``` into the project source directory. Then, run ```go build```. After this, you should have a binary called ```gophish``` in the current directory.
-
-### Docker
-You can also use Gophish via the official Docker container [here](https://hub.docker.com/r/gophish/gophish/).
-
-### Setup
-After running the Gophish binary, open an Internet browser to https://localhost:3333 and login with the default username and password listed in the log output.
-e.g.
-```
-time="2020-07-29T01:24:08Z" level=info msg="Please login with the username admin and the password 4304d5255378177d"
+cd web
+npm ci
+npm run lint
+npm run build
 ```
 
-Releases of Gophish prior to v0.10.1 have a default username of `admin` and password of `gophish`.
+Run the Go application with your local configuration, then open the admin UI
+at `https://localhost:3333`. The first-run administrator password is printed in
+the application log.
 
-### Documentation
+## Deployment
 
-Documentation can be found on our [site](http://getgophish.com/documentation). Find something missing? Let us know by filing an issue!
+The `deploy/` directory contains example configuration for a Linux host using
+systemd and nginx. `scripts/install.sh` installs the compatible service and
+nginx configuration; review every example and replace hostnames, credentials,
+and certificate paths before using it in an environment.
 
-### Issues
+The reference deployment uses these domains and ports:
 
-Find a bug? Want more features? Find something missing in the documentation? Let us know! Please don't hesitate to [file an issue](https://github.com/gophish/gophish/issues/new) and we'll get right on it.
+| Role | Hostname | Local port |
+| --- | --- | ---: |
+| Campaign landing pages | `itsupport.insec.in` | `8082` |
+| Administrator console | `admin.itsupport.insec.in` | `3333` |
+| nginx HTTPS | public hostnames | `443` |
 
-### License
+The imported deployment examples retain upstream Gophish-compatible service
+and runtime identifiers. Treat the sample domains and `/opt/gophish` paths as
+deployment configuration to review; do not copy them blindly into production.
+
+## Template library
+
+AwareNow includes original INSEC templates and vendor template packs under
+`templates/insec/` and `templates/vendor/`. Review the provenance and license
+files in each vendor directory before redistribution.
+
+To import templates into an authorized local instance, set the API key and
+run:
+
+```bash
+export GOPHISH_API_KEY="<authorized-instance-api-key>"
+python3 scripts/import-templates.py
 ```
-Gophish - Open-Source Phishing Framework
 
-The MIT License (MIT)
+The compatibility environment variable is intentionally named
+`GOPHISH_API_KEY` because the application API remains Gophish-compatible.
+Additional filtering guidance is in `templates/README.md` and the helper
+scripts under `scripts/`.
 
-Copyright (c) 2013 - 2020 Jordan Wright
+## Repository layout
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software ("Gophish Community Edition") and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+- `auth/`, `controllers/`, `models/`, and related directories: Go backend
+- `web/`: current frontend application
+- `templates/`: server UI and campaign template library
+- `deploy/`: systemd and nginx examples
+- `scripts/`: installation and template-management helpers
+- `docs/`: project design, plans, and audit records
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+## License
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-```
+See `LICENSE` and the individual vendor license files for applicable terms.

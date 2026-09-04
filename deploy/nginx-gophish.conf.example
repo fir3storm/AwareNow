@@ -1,0 +1,50 @@
+# Gophish on the same VPS as AwareCheck.
+# nginx already owns :80 / :443. Gophish listens on localhost only.
+#
+# DNS (insec.in zone):
+#   A    itsupport          77.107.95.65
+#   A    admin.itsupport    77.107.95.65
+#
+# After HTTP is working:
+#   certbot --nginx -d itsupport.insec.in -d admin.itsupport.insec.in
+#
+# Admin UI (you log in here)     →  https://admin.itsupport.insec.in
+# Campaign links (staff click)   →  https://itsupport.insec.in
+
+server {
+    listen 80;
+    server_name __ADMIN_HOST__;
+
+    location / {
+        proxy_pass http://127.0.0.1:__ADMIN_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_read_timeout 300s;
+    }
+}
+
+server {
+    listen 80;
+    server_name __PHISH_HOST__;
+
+    # Education page after a click/submit. Campaign tracking stays on /.
+    location = /got-phished {
+        default_type text/html;
+        alias /opt/gophish/templates/insec/static/got-phished.html;
+    }
+
+    location / {
+        proxy_pass http://127.0.0.1:__PHISH_PORT__;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 300s;
+    }
+}

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Awareness: Quishing (QR Code Phishing)</title>
+    <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --ink: #0f1b2d;
+      --body: #3a4656;
+      --muted: #6b7787;
+      --faint: #8a94a3;
+      --border: #e7eaee;
+      --hairline: #eef0f3;
+      --brand: #1b3a5b;
+      --brand-700: #142c46;
+      --brand-accent: #2b5d8a;
+      --danger: #c0392b;
+      --success: #1f7a4d;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 40px 20px;
+      background: var(--bg);
+      color: var(--body);
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 56px 60px;
+      box-shadow: 0 1px 3px rgba(15,27,45,.04), 0 12px 32px rgba(15,27,45,.05);
+    }
+
+    /* Header */
+    .header { text-align: left; margin: 0 0 36px; padding: 0; border: none; }
+    .header::before {
+      content: 'Security Awareness Training';
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--brand-accent);
+      margin-bottom: 14px;
+    }
+    h1 {
+      color: var(--ink);
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -.02em;
+      margin: 0;
+    }
+
+    /* Typographic rhythm — whitespace does the work, not boxes */
+    h2 {
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 660;
+      letter-spacing: -.01em;
+      margin: 52px 0 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    h3 { color: var(--ink); font-size: 16.5px; font-weight: 650; margin: 28px 0 8px; }
+    h4 { color: var(--ink); font-size: 15px; font-weight: 650; margin: 0 0 8px; }
+    p { margin: 14px 0; }
+    ul, ol { margin: 14px 0; padding-left: 24px; }
+    li { margin: 8px 0; padding-left: 4px; }
+    li::marker { color: var(--faint); }
+    a { color: var(--brand-accent); text-decoration: underline; text-underline-offset: 2px; }
+    strong { color: var(--ink); font-weight: 650; }
+    section { margin: 0; }
+
+    /* Opening notice — one restrained neutral panel, no colored bar */
+    .alert, .caught-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      color: var(--body);
+    }
+    .alert strong, .caught-box strong { color: var(--ink); }
+    .alert-danger strong:first-child,
+    .alert-warning strong:first-child { color: var(--danger); }
+
+    /* Former colored callouts -> plain editorial flow (no fill, no border, no bar) */
+    .threat-scenario, .threat-tactics, .technique-box, .tactics-box, .scenario-box,
+    .suspicious-card, .advanced-threats, .danger-highlight,
+    .red-flags, .red-flags-list, .red-flags-section, .red-flag-list,
+    .protection-tips, .protection-box, .protection-strategies, .best-practices,
+    .good-habits, .verification-steps, .protect, .legitimate-card,
+    .why-box, .why-ai-box, .tool-box {
+      background: none;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      margin: 18px 0;
+    }
+
+    /* Semantic cue via list markers, not containers */
+    .threat-scenario ul, .threat-tactics ul, .technique-box ul, .tactics-box ul,
+    .scenario-box ul, .suspicious-card ul, .advanced-threats ul,
+    .red-flags ul, .red-flags-list ul, .red-flags-section ul, .red-flag-list,
+    .protection-tips ul, .protection-box ul, .protection-strategies ul,
+    .best-practices ul, .good-habits, .verification-steps ul, .legitimate-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 14px 0;
+    }
+    .threat-scenario li, .threat-tactics li, .technique-box li, .tactics-box li,
+    .scenario-box li, .suspicious-card li, .advanced-threats li,
+    .red-flags li, .red-flags-list li, .red-flags-section li, .red-flag-list > li,
+    .protection-tips li, .protection-box li, .protection-strategies li,
+    .best-practices li, .good-habits > li, .verification-steps li, .legitimate-card li {
+      position: relative;
+      padding-left: 26px;
+      margin: 10px 0;
+      border: none;
+    }
+    /* danger / attack markers */
+    .threat-scenario li::before, .threat-tactics li::before, .technique-box li::before,
+    .tactics-box li::before, .scenario-box li::before, .suspicious-card li::before,
+    .advanced-threats li::before, .red-flags li::before, .red-flags-list li::before,
+    .red-flags-section li::before, .red-flag-list > li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: .62em;
+      width: 7px;
+      height: 7px;
+      border-radius: 2px;
+      background: var(--danger);
+    }
+    /* positive / guidance markers */
+    .protection-tips li::before, .protection-box li::before, .protection-strategies li::before,
+    .best-practices li::before, .good-habits > li::before, .verification-steps li::before,
+    .legitimate-card li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--success);
+      font-weight: 700;
+    }
+    /* keep numbered protection steps as clean ordered lists */
+    .protection-tips ol, .protection-box ol, .verification-steps ol, .protect ol { list-style: decimal; padding-left: 22px; }
+    .protection-tips ol li::before, .protection-box ol li::before, .verification-steps ol li::before { content: none; }
+    .protection-tips ol li, .protection-box ol li, .verification-steps ol li { padding-left: 4px; }
+
+    /* explicit icon markers from source */
+    .flag-icon, .check-icon { display: none; }
+    .red-flag-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--hairline); }
+    .red-flag-item:last-child { border-bottom: none; }
+    .red-flag-item::before { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-top: .55em; border-radius: 2px; background: var(--danger); }
+    .flag-text { color: var(--body); }
+
+    /* Comparison: colored headings + markers, no fill */
+    .comparison-grid, .platform-examples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px 36px;
+      margin: 18px 0;
+    }
+    .legitimate-card h4 { color: var(--success); }
+    .suspicious-card h4 { color: var(--danger); }
+    .suspicious-card li::before { content: ""; position: absolute; left: 4px; top: .62em; width: 7px; height: 7px; border-radius: 2px; background: var(--danger); }
+    .suspicious-card ul, .suspicious-card { list-style: none; }
+    .suspicious-card li { position: relative; padding-left: 26px; }
+
+    /* Card grids -> clean white cards, hairline border, no colored bar */
+    .threat-types, .services-grid, .platforms-grid, .government-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .threat-card, .service-card, .platform-card, .agency-card, .comparison-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin: 0;
+    }
+    .threat-card h4, .service-card h4, .platform-card h4, .agency-card h4 { color: var(--ink); }
+
+    /* Stats -> light, borderless metric blocks (no navy fill, no box) */
+    .stat-box, .statistics-highlight, .cost-impact {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 22px;
+      margin: 18px 0;
+      color: var(--body);
+    }
+    .stat-num { font-size: 30px; font-weight: 700; color: var(--brand); line-height: 1.1; }
+
+    /* Quiz -> single subtle panel */
+    .quiz-section, .quiz, .quiz-question {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      margin: 28px 0;
+    }
+    .quiz-option { display: block; padding: 5px 0; }
+    .correct { color: var(--success); font-weight: 650; }
+    details { margin-top: 14px; }
+    details summary { cursor: pointer; color: var(--brand-accent); font-weight: 600; }
+    details > div { margin-top: 10px; }
+    input[type=radio] { margin-right: 9px; }
+    label { color: var(--body); }
+
+    /* Closing CTA — the one deliberate color block */
+    .footer, .footer-cta, .cta-section, .hero {
+      text-align: center;
+      margin: 44px 0 0;
+      padding: 36px 32px;
+      background: var(--brand);
+      color: #fff;
+      border-radius: var(--radius);
+    }
+    .footer *, .footer-cta *, .cta-section *, .hero * { color: #fff; }
+    .footer h2, .footer-cta h2, .cta-section h2, .hero h2 { border-bottom: none; color: #fff; margin-top: 0; }
+    .hero-label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+    .footer a, .cta-section a, .hero a { color: #fff; }
+    .btn {
+      display: inline-block;
+      background: #fff;
+      color: var(--brand) !important;
+      padding: 12px 26px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 650;
+      margin-top: 14px;
+    }
+    .emoji { font-style: normal; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Quishing (QR Code Phishing) — Training</h1>
+            <div class="alert alert-danger">
+                <strong>You scanned or clicked a simulated malicious QR code.</strong><br>
+                "Quishing" uses QR codes to bypass email security filters and redirect victims to phishing pages — a rapidly growing attack vector since 2023.
+            </div>
+        </div>
+
+        <section>
+            <h2>Why QR Codes Are Weaponized</h2>
+            <div class="why-box">
+                <strong>QR codes defeat traditional email security because:</strong>
+                <ul>
+                    <li><strong>Security scanners can't read image URLs</strong> — the malicious URL is hidden inside a picture, bypassing link-scanning filters</li>
+                    <li><strong>Scan happens on your phone</strong> — mobile devices often have fewer security controls than corporate laptops</li>
+                    <li><strong>People trust QR codes</strong> — pandemic-era QR menu adoption normalized scanning unknown codes</li>
+                    <li><strong>No visible link to hover over</strong> — you can't see where the QR code leads before scanning</li>
+                </ul>
+            </div>
+            <p>Quishing attacks increased <strong>over 500%</strong> in 2023 as attackers adapted to bypass email security gateways that now scan links but not images.</p>
+        </section>
+
+        <section>
+            <h2>Common Quishing Attack Scenarios</h2>
+            <div class="technique-box">
+                <ul>
+                    <li><strong>MFA re-enrollment:</strong> "Security upgrade requires you to re-register your authenticator" — QR leads to credential harvest page</li>
+                    <li><strong>WiFi credential provisioning:</strong> "Scan to connect to new secure network" — QR leads to fake portal</li>
+                    <li><strong>Parking payment:</strong> Physical QR code stickers placed on parking meters (in-person quishing)</li>
+                    <li><strong>Package tracking:</strong> "Scan to confirm delivery address" — extremely effective</li>
+                    <li><strong>Microsoft/Office 365 MFA:</strong> Fake "scan to set up Microsoft Authenticator" links in HR onboarding emails</li>
+                    <li><strong>Conference/event check-in:</strong> Fake event QR codes that capture registration credentials</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>Red Flags Before Scanning</h2>
+            <div class="alert alert-danger">
+                <ul>
+                    <li><strong>Unexpected MFA/security re-enrollment emails</strong> — IT announces these in advance through multiple channels</li>
+                    <li><strong>Urgency + QR code combination:</strong> "Scan immediately or lose access" should always raise suspicion</li>
+                    <li><strong>Physical QR codes in unusual places:</strong> Stickers placed over original QR codes at restaurants, meters, etc.</li>
+                    <li><strong>No company branding on the QR itself:</strong> Legitimate IT tools embed QR codes with identifiable context</li>
+                    <li><strong>The email mentions a "manual link" as backup:</strong> This is the real attack vector — the link and the QR both lead to the same phishing page</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>Safe QR Code Practices</h2>
+            <div class="protection-box">
+                <ol>
+                    <li><strong>Preview the URL before opening:</strong> iOS and Android both show the destination URL when you scan — read it before tapping "Open"</li>
+                    <li><strong>Verify IT announcements through official channels</strong> — check the intranet or call the help desk before scanning a QR for "mandatory re-enrollment"</li>
+                    <li><strong>Don't scan QR codes in unsolicited emails</strong> — especially those about MFA, credentials, or account security</li>
+                    <li><strong>Inspect physical QR codes</strong> for stickers placed over original codes (common on parking meters, menus)</li>
+                    <li><strong>Use a QR scanner with built-in URL safety checks</strong> — many security apps offer this</li>
+                    <li><strong>Report suspicious QR code emails to IT Security</strong> — they're particularly hard to catch with automated filters</li>
+                </ol>
+            </div>
+        </section>
+
+        <section>
+            <h2>Knowledge Check</h2>
+            <div style="background: transparent; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <p><strong>Your company sends an email saying all employees must scan a QR code to re-enroll their MFA authenticator app by end of business today or they'll be locked out. What should you do?</strong></p>
+                <div style="margin: 15px 0;">
+                    <input type="radio" id="q1a" name="q1" value="a">
+                    <label for="q1a">Scan the QR code immediately to avoid being locked out</label><br>
+                    <input type="radio" id="q1b" name="q1" value="b">
+                    <label for="q1b">Call the IT help desk using the number from your company directory to verify the announcement</label><br>
+                    <input type="radio" id="q1c" name="q1" value="c">
+                    <label for="q1c">Scan the QR code but don't enter your credentials</label><br>
+                    <input type="radio" id="q1d" name="q1" value="d">
+                    <label for="q1d">Reply to the email asking if it's legitimate</label>
+                </div>
+                <details style="margin-top: 20px;">
+                    <summary style="cursor: pointer; color: #1b3a5b; font-weight: 600;"><strong>Click for Answer</strong></summary>
+                    <div style="background: transparent; padding: 15px; margin-top: 10px; border-radius: 5px;">
+                        <p><strong>Correct Answer: B</strong> — IT will never send a same-day mandatory MFA re-enrollment via QR code without prior notice through official channels. Always verify urgent IT security requests via the help desk before scanning. The QR code could lead to a malicious page that harvests credentials before you realize.</p>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section class="cta-section" style="text-align: center; margin-top: 40px; padding: 20px; background: #1b3a5b; color: white; border-radius: 8px;">
+            <h2>Training Complete!</h2>
+            <p>QR codes hide their destinations — always preview the URL before opening and verify MFA/security re-enrollment requests with IT directly.</p>
+            <p><strong>Questions?</strong> Contact IT Security at security@company.com</p>
+        </section>
+    </div>
+</body>
+</html>

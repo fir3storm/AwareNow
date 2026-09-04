@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Awareness Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #f5f6f8;
+            color: #3a4656;
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            background: #ffffff;
+            border: 1px solid #e7eaee;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(15,27,45,.04), 0 12px 32px rgba(15,27,45,.05);
+            padding: 56px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 28px;
+            border-bottom: 2px solid #1b3a5b;
+            margin-bottom: 32px;
+        }
+        .header-logo {
+            font-size: 22px;
+            font-weight: 650;
+            color: #15263b;
+            margin-bottom: 8px;
+        }
+        .header-subtitle {
+            color: #2b5d8a;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+        }
+        h1 {
+            color: #15263b;
+            margin-bottom: 16px;
+            font-size: 27px;
+            font-weight: 650;
+            letter-spacing: -.01em;
+            text-align: center;
+        }
+        .subtitle {
+            color: #6b7787;
+            font-size: 16px;
+            margin-bottom: 32px;
+            text-align: center;
+            line-height: 1.5;
+        }
+        .alert {
+            background-color: #f8fafc;
+            border: 1px solid #e7eaee;
+            padding: 18px 20px;
+            border-radius: 10px;
+            margin: 24px 0;
+        }
+        .alert h3 {
+            color: #c0392b;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 650;
+        }
+        .alert p {
+            color: #3a4656;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .success-box {
+            background-color: #f8fafc;
+            border: 1px solid #e7eaee;
+            padding: 18px 20px;
+            border-radius: 10px;
+            margin: 24px 0;
+        }
+        .success-box h3 {
+            color: #1f7a4d;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 650;
+        }
+        .success-box p {
+            color: #3a4656;
+            margin: 0;
+            line-height: 1.6;
+        }
+        .next-steps {
+            border: none;
+            padding: 0;
+            margin: 28px 0;
+        }
+        .next-steps h3 {
+            color: #0f1b2d;
+            margin-bottom: 12px;
+            font-size: 17px;
+            font-weight: 650;
+        }
+        .next-steps ul {
+            list-style: none;
+            padding: 0;
+        }
+        .next-steps li {
+            margin: 10px 0;
+            padding: 0 0 0 26px;
+            position: relative;
+            line-height: 1.6;
+            color: #3a4656;
+        }
+        .next-steps li::before {
+            content: "\2713";
+            position: absolute;
+            left: 0;
+            top: 0;
+            color: #1f7a4d;
+            font-weight: 700;
+        }
+        .next-steps li strong {
+            color: #0f1b2d;
+        }
+        .button-group {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin: 32px 0;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 12px 26px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+            display: inline-block;
+        }
+        .btn-primary {
+            background-color: #1b3a5b;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #16314d;
+        }
+        .btn-secondary {
+            background-color: #ffffff;
+            color: #3f4b5b;
+            border: 1px solid #d3dae4;
+        }
+        .btn-secondary:hover {
+            background-color: #f6f8fb;
+        }
+        .footer {
+            margin-top: 40px;
+            padding-top: 24px;
+            border-top: 1px solid #e3e8ef;
+            text-align: center;
+        }
+        .footer p {
+            color: #6b7787;
+            font-size: 14px;
+            line-height: 1.6;
+            margin: 8px 0;
+        }
+        .footer strong {
+            color: #15263b;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 32px 24px;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">Security Awareness Training</div>
+            <div class="header-subtitle">Company Information Security Program</div>
+        </div>
+
+        <h1>Simulated Phishing Test</h1>
+        <p class="subtitle">This was a training exercise. No actual harm was done to your account or data.</p>
+
+        <div class="alert">
+            <h3>What Just Happened?</h3>
+            <p>You clicked on a link or provided information in response to a simulated phishing email. In a real attack, this action could have compromised your credentials, installed malware, or exposed sensitive company data to threat actors.</p>
+        </div>
+
+        <div class="success-box">
+            <h3>The Good News</h3>
+            <p>This was a controlled security awareness exercise. No credentials were captured, and your account remains secure. The purpose of this training is to help you recognize and avoid real phishing attacks in the future.</p>
+        </div>
+
+        <div class="next-steps">
+            <h3>Recommended Next Steps</h3>
+            <ul>
+                <li><strong>Complete the training module</strong> - Learn about the specific attack techniques used in this simulation</li>
+                <li><strong>Review warning signs</strong> - Identify the red flags that indicate a phishing attempt</li>
+                <li><strong>Report suspicious emails</strong> - Always forward suspicious messages to security@company.com</li>
+                <li><strong>Apply what you learn</strong> - Use this knowledge to protect yourself and the company from real threats</li>
+            </ul>
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="startTraining()">Start Training Module</button>
+            <button class="btn btn-secondary" onclick="closeWindow()">Return to Work</button>
+        </div>
+
+        <div class="footer">
+            <p><strong>Remember:</strong> The best defense against phishing is awareness and vigilance.</p>
+            <p>Always verify unexpected requests for credentials, payments, or sensitive information.</p>
+            <p style="margin-top: 16px;">Questions about this training? Contact the Information Security Team at security@company.com</p>
+            <p style="margin-top: 16px;">© 2025 Company Information Security Program</p>
+        </div>
+    </div>
+
+    <script>
+        function startTraining() {
+            // Update this URL to the education page for this specific campaign.
+            // {{.CampaignType}} is not a GoPhish variable; set the path explicitly
+            // per campaign (e.g. /education/microsoft_education.html).
+            window.location.href = '/education/general_education.html';
+        }
+
+        function closeWindow() {
+            if (window.opener) {
+                window.close();
+            } else {
+                window.location.href = 'https://company.com';
+            }
+        }
+    </script>
+</body>
+</html>

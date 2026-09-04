@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Identity Monitoring Alert - Review Recent Activity</title>
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f5f5f5;
+            line-height: 1.6;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #d9d9d9;
+            border-top: 4px solid #00695c;
+        }
+        .header {
+            padding: 22px 28px;
+            border-bottom: 1px solid #ececec;
+        }
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: #00695c;
+            margin: 0;
+        }
+        .brand-sub {
+            font-size: 12px;
+            color: #777;
+            margin: 2px 0 0 0;
+        }
+        .content { padding: 28px; }
+        .alert-box {
+            background: #e0f2f1;
+            border: 1px solid #b2dfdb;
+            border-radius: 4px;
+            padding: 16px 18px;
+            margin: 18px 0;
+        }
+        .alert-box h3 { margin: 0; font-size: 15px; color: #00695c; }
+        .activity-table { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 14px; }
+        .activity-table td { padding: 9px 0; border-bottom: 1px solid #eee; }
+        .activity-table td:first-child { color: #777; width: 45%; }
+        .cta-button {
+            background: #00695c;
+            color: #ffffff;
+            padding: 13px 28px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 18px 0;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .cta-button:hover { background: #004d40; color: #ffffff; text-decoration: none; }
+        .footer {
+            background: #f8f9fa;
+            padding: 18px 28px;
+            font-size: 11px;
+            color: #888;
+            line-height: 1.6;
+            border-top: 1px solid #ececec;
+        }
+        .footer a { color: #00695c; text-decoration: none; }
+        p { font-size: 15px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <p class="brand-name">ShieldCredit Monitoring</p>
+            <p class="brand-sub">Identity &amp; Credit Protection Services</p>
+        </div>
+
+        <div class="content">
+            <div class="alert-box">
+                <h3>New alert on your monitored profile</h3>
+            </div>
+
+            <p>Dear {{.FirstName}},</p>
+
+            <p>As part of your identity monitoring service, we detected a change on one of your monitored credit files that we wanted to bring to your attention.</p>
+
+            <table class="activity-table">
+                <tr><td>Alert type</td><td>New credit inquiry</td></tr>
+                <tr><td>Date detected</td><td>{{.Date}}</td></tr>
+                <tr><td>Bureau</td><td>Experian</td></tr>
+                <tr><td>Reference</td><td>ALERT-2026-740215</td></tr>
+            </table>
+
+            <p>If this activity was you &mdash; for example, if you recently applied for a loan or credit card &mdash; no action is needed. If you don't recognize it, reviewing the details will help you decide whether to take any further steps.</p>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Review Activity</a>
+            </p>
+
+            <p>You can review the full details and your current monitoring status by signing in to your account. We recommend reviewing alerts within a few days so your records stay up to date.</p>
+
+            <p>Thank you for using ShieldCredit Monitoring.</p>
+
+            <p>Sincerely,<br>
+            <strong>The ShieldCredit Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This alert was sent to {{.Email}} regarding reference ALERT-2026-740215.</p>
+            <p>ShieldCredit Monitoring, 400 Market Street, Philadelphia, PA 19106</p>
+            <p>
+                <a href="https://www.shieldcredit.example">Manage alert preferences</a> &bull;
+                <a href="https://www.shieldcredit.example">Help Center</a>
+            </p>
+            <p>© 2026 ShieldCredit Monitoring. All rights reserved.</p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slack: You have a new direct message</title>
+    <style>
+        body { margin: 0; padding: 20px; background: #f4f4f4; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.12); }
+        .header { background: #4A154B; padding: 20px 30px; display: flex; align-items: center; }
+        .header svg { width: 32px; height: 32px; }
+        .header span { color: white; font-size: 22px; font-weight: 700; margin-left: 12px; letter-spacing: -0.5px; }
+        .content { padding: 32px 30px; }
+        .message-preview { border-left: 4px solid #4A154B; padding: 16px 20px; background: #f9f5f9; border-radius: 0 6px 6px 0; margin: 24px 0; }
+        .sender { font-weight: 700; color: #1d1c1d; font-size: 15px; }
+        .workspace { color: #616061; font-size: 14px; margin-top: 2px; }
+        .msg-text { color: #1d1c1d; margin-top: 10px; font-size: 14px; line-height: 1.5; }
+        .cta-button { display: inline-block; background: #4A154B; color: white; padding: 12px 24px; border-radius: 4px; text-decoration: none; font-weight: 600; font-size: 15px; margin: 10px 0; }
+        .footer { font-size: 12px; color: #888; margin-top: 30px; border-top: 1px solid #e8e8e8; padding-top: 20px; }
+        p { color: #1d1c1d; font-size: 15px; line-height: 1.6; margin: 0 0 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <svg viewBox="0 0 122.8 122.8" xmlns="http://www.w3.org/2000/svg">
+                <path d="M25.8 77.6c0 7.1-5.8 12.9-12.9 12.9S0 84.7 0 77.6s5.8-12.9 12.9-12.9h12.9zM32.3 77.6c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9v32.3c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9z" fill="#E01E5A"/>
+                <path d="M45.2 25.8c-7.1 0-12.9-5.8-12.9-12.9S38.1 0 45.2 0s12.9 5.8 12.9 12.9v12.9zM45.2 32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H12.9C5.8 58.1 0 52.3 0 45.2s5.8-12.9 12.9-12.9z" fill="#36C5F0"/>
+                <path d="M97 45.2c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9-5.8 12.9-12.9 12.9H97zM90.5 45.2c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V12.9C64.7 5.8 70.5 0 77.6 0s12.9 5.8 12.9 12.9z" fill="#2EB67D"/>
+                <path d="M77.6 97c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9-12.9-5.8-12.9-12.9V97zM77.6 90.5c-7.1 0-12.9-5.8-12.9-12.9s5.8-12.9 12.9-12.9h32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9z" fill="#ECB22E"/>
+            </svg>
+            <span>Slack</span>
+        </div>
+
+        <div class="content">
+            <p>Hi {{.FirstName}},</p>
+
+            <p>You have an unread direct message waiting for you in Slack.</p>
+
+            <div class="message-preview">
+                <div class="sender">Alex Rivera <span style="color:#888; font-weight:400;">— IT Workspace Admin</span></div>
+                <div class="workspace">Meridian Group</div>
+                <div class="msg-text">
+                    "Hey {{.FirstName}}, quick heads up — we're running an account audit this afternoon. Can you confirm your sign-in before 3pm so your access isn't paused during the review? Details are in the workspace."
+                </div>
+            </div>
+
+            <p>To read and reply to this message, open it in Slack:</p>
+
+            <p style="text-align: center; margin: 28px 0;">
+                <a href="{{.URL}}" class="cta-button">Open in Slack</a>
+            </p>
+
+            <p>This link will expire in 24 hours.</p>
+
+            <div class="footer">
+                <p style="font-size:12px; color:#888;">You're receiving this email because {{.Email}} is registered with Slack.<br>
+                Slack Technologies, 500 Howard Street, San Francisco, CA 94105</p>
+            </div>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

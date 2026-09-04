@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Starbucks Rewards - Action Required</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+            color: #000000;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            background-color: #00704a;
+            padding: 24px 40px;
+            text-align: center;
+        }
+        .header-logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+        .content {
+            padding: 40px;
+        }
+        .reward-box {
+            background-color: #f1f8f5;
+            border: 2px solid #00704a;
+            border-radius: 8px;
+            padding: 24px;
+            margin: 24px 0;
+            text-align: center;
+        }
+        .reward-amount {
+            font-size: 36px;
+            font-weight: 700;
+            color: #00704a;
+            margin: 12px 0;
+        }
+        .expiry-notice {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            margin: 24px 0;
+        }
+        .expiry-notice p {
+            margin: 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        .cta-button {
+            background-color: #00704a;
+            color: #ffffff;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 24px;
+            display: inline-block;
+            margin: 24px 0;
+            font-weight: 700;
+            font-size: 14px;
+            text-align: center;
+        }
+        .cta-button:hover {
+            background-color: #006341;
+            text-decoration: none;
+            color: #ffffff;
+        }
+        .footer {
+            background-color: #f7f7f7;
+            padding: 24px 40px;
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.5;
+            text-align: center;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #000000;
+        }
+        p {
+            line-height: 1.6;
+            color: #333333;
+            margin: 0 0 16px 0;
+        }
+        .details-table {
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+        .details-table td {
+            padding: 8px 0;
+            color: #333333;
+        }
+        .details-table td:first-child {
+            font-weight: 600;
+            width: 40%;
+        }
+        @media (max-width: 600px) {
+            .content, .footer {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-logo">STARBUCKS REWARDS</div>
+        </div>
+
+        <div class="content">
+            <h1>You have a reward ready to redeem</h1>
+
+            <p>Hi {{.FirstName}},</p>
+
+            <p>Good news — you've earned enough Stars for a free reward. You can redeem it on your next order, in store or in the app.</p>
+
+            <div class="reward-box">
+                <p style="margin: 0; color: #00704a; font-weight: 600;">Rewards Balance</p>
+                <div class="reward-amount">150 Stars</div>
+                <p style="margin: 0; color: #666666; font-size: 14px;">1 reward ready to redeem</p>
+            </div>
+
+            <div class="expiry-notice">
+                <p>Your reward is available now. Stars expire after a period of inactivity, so redeem it within 14 days to be sure you don't miss out.</p>
+            </div>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">View and redeem reward</a>
+            </p>
+
+            <p>To redeem, open your reward and choose your item at checkout. No code needed — your reward is linked to your account.</p>
+
+            <p>Thank you for being a Starbucks Rewards member,<br>
+            <strong>The Starbucks Rewards Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This email was sent to {{.Email}}</p>
+            <p style="margin-top: 12px;">
+                Starbucks Corporation<br>
+                2401 Utah Avenue South, Seattle, WA 98134<br>
+                © 2026 Starbucks Coffee Company. All rights reserved.
+            </p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

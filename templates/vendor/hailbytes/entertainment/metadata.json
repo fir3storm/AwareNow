@@ -1,0 +1,41 @@
+{
+  "category": "entertainment",
+  "industry": "Cross-industry",
+  "description": "Phishing templates impersonating entertainment and consumer reward services",
+  "templates": [
+    {
+      "filename": "spotify_account.html",
+      "name": "Spotify Account Issue",
+      "attack_vector": "credential_harvest",
+      "difficulty": "beginner",
+      "estimated_click_rate": "40-60%",
+      "gophish_variables": ["{{.FirstName}}", "{{.Email}}", "{{.URL}}", "{{.Tracker}}"],
+      "suggested_subject_lines": [
+        "Spotify: We couldn't charge your payment method",
+        "Your Spotify Premium subscription is about to expire",
+        "Spotify: Action required to keep your account"
+      ],
+      "education_page": "education/entertainment_education.html",
+      "tags": ["entertainment", "spotify", "subscription", "payment", "credential-theft", "beginner"],
+      "notes": "Consumer-brand lure that works on personal-device and BYOD users; the failed-payment angle drives quick action. Best for general awareness rather than role-specific testing — many recipients will note it's a personal account in a work inbox."
+    },
+    {
+      "filename": "starbucks_gift.html",
+      "name": "Starbucks Gift Card Offer",
+      "attack_vector": "credential_harvest",
+      "difficulty": "beginner",
+      "estimated_click_rate": "45-65%",
+      "gophish_variables": ["{{.FirstName}}", "{{.Email}}", "{{.URL}}", "{{.Tracker}}"],
+      "suggested_subject_lines": [
+        "You have a Starbucks reward waiting — claim it now",
+        "Your Starbucks Stars are expiring soon",
+        "Congratulations! You have a $10 Starbucks reward"
+      ],
+      "education_page": "education/entertainment_education.html",
+      "tags": ["entertainment", "starbucks", "gift-card", "reward", "credential-theft", "beginner"],
+      "notes": "Reward-based lure with strong cross-role appeal — the 'free reward' hook draws clicks even from cautious users. Effective as an early-program baseline to demonstrate susceptibility to too-good-to-be-true offers."
+    }
+  ],
+  "gophish_version_tested": "0.12.1",
+  "last_updated": "2026-06-26"
+}

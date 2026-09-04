@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webmail upgrade scheduled</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f5f7;
+            margin: 0;
+            padding: 20px;
+            color: #1d2125;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #e3e6ea;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .header {
+            background: #0c2d57;
+            color: white;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .content { padding: 28px 24px; font-size: 14px; line-height: 1.55; }
+        .storage-comparison {
+            background: #f4f5f7;
+            border: 1px solid #e3e6ea;
+            padding: 18px 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .feature-list { background: #f4f5f7; border: 1px solid #e3e6ea; border-radius: 4px; padding: 16px 20px 16px 36px; margin: 20px 0; font-size: 14px; }
+        .feature-list li { margin: 6px 0; }
+        .cta-button {
+            background: #0c2d57;
+            color: white;
+            padding: 12px 26px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .footer { font-size: 12px; color: #6b778c; padding: 0 24px 24px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Corporate Webmail</div>
+
+        <div class="content">
+            <p>Dear {{.FirstName}},</p>
+
+            <p>The IT team is upgrading our corporate webmail platform. The update improves spam and phishing protection, speeds up search, and increases everyone's mailbox storage. No action is needed during the upgrade, but you can review the details below.</p>
+
+            <div class="storage-comparison">
+                <div style="display:inline-block; text-align:center; margin:0 18px;">
+                    <div style="font-size:13px; color:#6b778c;">Current</div>
+                    <div style="font-size:24px; font-weight:bold; color:#44546f;">25 GB</div>
+                </div>
+                <span style="font-size:20px; color:#6b778c;">&rarr;</span>
+                <div style="display:inline-block; text-align:center; margin:0 18px;">
+                    <div style="font-size:13px; color:#6b778c;">After upgrade</div>
+                    <div style="font-size:24px; font-weight:bold; color:#0c2d57;">50 GB</div>
+                </div>
+            </div>
+
+            <p><strong>What's changing:</strong></p>
+            <ul class="feature-list">
+                <li>Mailbox storage doubled to 50 GB</li>
+                <li>Improved spam and phishing filtering</li>
+                <li>Faster message search and loading</li>
+                <li>Better support on mobile devices</li>
+            </ul>
+
+            <p>Your account ({{.Email}}) is included in this upgrade. You can review the full schedule and what to expect here:</p>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Review upgrade details</a>
+            </p>
+
+            <p>Your mailbox stays available throughout. If you have questions, contact the IT Help Desk at extension 2847.</p>
+
+            <p>Thanks,<br>
+            <strong>Marcus Bell</strong><br>
+            IT Service Desk</p>
+        </div>
+
+        <div class="footer">
+            This message was sent to {{.Email}}. Reference: 6610582.
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

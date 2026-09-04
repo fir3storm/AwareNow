@@ -8,7 +8,15 @@ _obj
 _test
 
 # Node Modules
-node_modules
+node_modules/
+
+# Frontend and generated build output
+dist/
+build/
+web/dist/
+web/build/
+.vite/
+.cache/
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -25,6 +33,28 @@ _testmain.go
 
 gophish_admin.crt
 gophish_admin.key
+
+# Runtime state, databases, and local deployment data
+runtime/
+*.db
+*.sqlite
+*.sqlite3
+
+# TLS certificates and private keys
+*.crt
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Python generated files
+__pycache__/
+*.py[cod]
+
+# Local worktrees and OS metadata
+.worktrees/
+.DS_Store
+Thumbs.db
 
 *.exe
 gophish.db*

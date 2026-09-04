@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microsoft 365 - Update your payment method</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f3f3f3;
+            color: #242424;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e1dfdd;
+        }
+        .header {
+            padding: 24px 32px;
+            border-bottom: 1px solid #edebe9;
+        }
+        .ms-logo {
+            font-size: 20px;
+            font-weight: 600;
+            color: #242424;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .ms-grid {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        .content { padding: 28px 32px; }
+        .info-box {
+            background: #f3f9fd;
+            border: 1px solid #c7e0f4;
+            border-radius: 4px;
+            padding: 16px 20px;
+            margin: 20px 0;
+        }
+        .billing-summary {
+            border: 1px solid #edebe9;
+            border-radius: 4px;
+            padding: 4px 20px;
+            margin: 20px 0;
+        }
+        .billing-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #edebe9;
+            font-size: 14px;
+        }
+        .billing-item:last-child {
+            border-bottom: none;
+            font-weight: 600;
+        }
+        .cta-button {
+            background: #0067b8;
+            color: #ffffff;
+            padding: 12px 28px;
+            text-decoration: none;
+            border-radius: 2px;
+            display: inline-block;
+            margin: 16px 0;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .cta-button:hover { background: #005da6; color: #ffffff; text-decoration: none; }
+        .detail-label { font-size: 12px; color: #605e5c; }
+        .detail-value { font-size: 14px; color: #242424; font-weight: 600; }
+        .footer {
+            background: #faf9f8;
+            padding: 24px 32px;
+            border-top: 1px solid #edebe9;
+            font-size: 12px;
+            color: #605e5c;
+            line-height: 1.6;
+        }
+        .footer a { color: #0067b8; text-decoration: none; }
+        h2 { font-size: 22px; font-weight: 600; margin: 0 0 16px 0; color: #242424; }
+        p { font-size: 15px; line-height: 1.6; margin: 0 0 16px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="ms-grid">
+                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="0" y="0" width="9" height="9" fill="#f25022"/>
+                    <rect x="11" y="0" width="9" height="9" fill="#7fba00"/>
+                    <rect x="0" y="11" width="9" height="9" fill="#00a4ef"/>
+                    <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+                </svg>
+            </span>
+            <span class="ms-logo">Microsoft</span>
+        </div>
+
+        <div class="content">
+            <h2>Action needed: update your payment method</h2>
+
+            <p>Dear {{.FirstName}},</p>
+
+            <p>We were unable to process the most recent payment for your Microsoft 365 subscription. This usually happens when a card has expired or the billing details on file are out of date.</p>
+
+            <p>To avoid an interruption to your Microsoft 365 and Teams services, please review your billing information and update your payment method.</p>
+
+            <div class="info-box">
+                <div class="detail-label">Subscription</div>
+                <div class="detail-value">Microsoft 365 Business Standard</div>
+                <div style="margin-top:12px;" class="detail-label">Account</div>
+                <div class="detail-value">{{.Email}}</div>
+                <div style="margin-top:12px;" class="detail-label">Billing status</div>
+                <div class="detail-value" style="color:#a4262c;">Payment failed</div>
+            </div>
+
+            <div class="billing-summary">
+                <div class="billing-item">
+                    <span>Microsoft 365 Business Standard (monthly)</span>
+                    <span>$12.50</span>
+                </div>
+                <div class="billing-item">
+                    <span>Amount due</span>
+                    <span>$12.50</span>
+                </div>
+            </div>
+
+            <p>Updating your payment method takes only a moment and keeps your account active. No changes have been made to your subscription at this time.</p>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Review billing &amp; update payment</a>
+            </p>
+
+            <p>If your payment has already gone through, you can disregard this message. For help, sign in to the Microsoft 365 admin center and open a support request.</p>
+
+            <p>Thank you,<br>
+            <strong>The Microsoft 365 Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p style="margin:0 0 8px 0;">This message was sent to {{.Email}} regarding your Microsoft 365 subscription.</p>
+            <p style="margin:0 0 8px 0;">
+                <a href="https://privacy.microsoft.com">Privacy Statement</a> &bull;
+                <a href="https://www.microsoft.com/servicesagreement">Services Agreement</a>
+            </p>
+            <p style="margin:0;">Microsoft Corporation, One Microsoft Way, Redmond, WA 98052</p>
+            <p style="margin:8px 0 0 0;">© 2026 Microsoft Corporation. All rights reserved.</p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Drive - Document Shared</title>
+    <style>
+        body {
+            font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: white;
+            padding: 25px 30px 15px 30px;
+            border-bottom: 1px solid #e8eaed;
+        }
+        .google-logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .logo-text {
+            font-size: 22px;
+            color: #5f6368;
+            font-weight: 400;
+            margin-left: 8px;
+        }
+        .logo-colors {
+            font-size: 22px;
+            font-weight: 500;
+        }
+        .g-blue { color: #4285f4; }
+        .g-red { color: #ea4335; }
+        .g-yellow { color: #fbbc04; }
+        .g-green { color: #34a853; }
+        .content { padding: 30px; }
+        .file-preview {
+            background: #f8f9fa;
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            display: flex;
+            align-items: center;
+        }
+        .file-icon {
+            width: 48px;
+            height: 48px;
+            background: #1a73e8;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .file-details {
+            flex: 1;
+        }
+        .file-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #3c4043;
+            margin: 0 0 4px 0;
+        }
+        .file-meta {
+            font-size: 14px;
+            color: #5f6368;
+            margin: 0;
+        }
+        .cta-button {
+            background: #1a73e8;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 25px 0;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .cta-button:hover {
+            background: #1765cc;
+            text-decoration: none;
+            color: white;
+        }
+        .shared-by {
+            background: #e8f0fe;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #1a73e8;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+        .access-info {
+            background: #fef7e0;
+            border: 1px solid #f9ab00;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px 30px;
+            border-top: 1px solid #e8eaed;
+        }
+        .footer-links {
+            font-size: 12px;
+            color: #5f6368;
+            text-align: center;
+        }
+        .footer-links a {
+            color: #1a73e8;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="google-logo">
+                <div class="logo-colors">
+                    <span class="g-blue">G</span><span class="g-red">o</span><span class="g-yellow">o</span><span class="g-blue">g</span><span class="g-green">l</span><span class="g-red">e</span>
+                </div>
+                <div class="logo-text">Drive</div>
+            </div>
+            <h2 style="margin: 0; color: #3c4043; font-size: 22px; font-weight: 400;">Document shared with you</h2>
+        </div>
+
+        <div class="content">
+            <p style="color: #3c4043; font-size: 16px; line-height: 1.5;">Hi {{.FirstName}},</p>
+
+            <p style="color: #3c4043; font-size: 16px; line-height: 1.5;">Priya Nair shared a document with you on Google Drive. You have access to view and comment.</p>
+
+            <div class="shared-by">
+                <div class="avatar">P</div>
+                <div>
+                    <div style="font-weight: 500; color: #3c4043;">Shared by <strong>Priya Nair</strong> (priya.nair@meridianfinance.com)</div>
+                    <div style="font-size: 14px; color: #5f6368;">2 hours ago</div>
+                </div>
+            </div>
+
+            <div class="file-preview">
+                <div class="file-icon">PDF</div>
+                <div class="file-details">
+                    <div class="file-title">Q3_Budget_Review.pdf</div>
+                    <div class="file-meta">PDF • 2.3 MB • Modified 2 hours ago</div>
+                </div>
+            </div>
+
+            <div class="access-info">
+                <h4 style="margin: 0 0 8px 0; color: #b06000;">Access level: View and comment</h4>
+                <p style="margin: 0; font-size: 14px; color: #b06000;">Sign in to your Google account to open the file.</p>
+            </div>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Open in Drive</a>
+            </p>
+
+            <p style="color: #3c4043; font-size: 16px; line-height: 1.5;">If you have any questions about this document, contact the sender directly.</p>
+        </div>
+
+        <div class="footer">
+            <div class="footer-links">
+                <p style="margin: 0 0 10px 0;">This email was sent to {{.Email}}. If you don't want to receive emails about Google Drive activity, you can <a href="#">unsubscribe here</a>.</p>
+                <p style="margin: 0;">
+                    <a href="#">Privacy Policy</a> •
+                    <a href="#">Terms of Service</a> •
+                    <a href="#">Help Center</a>
+                </p>
+                <p style="margin: 10px 0 0 0;">© 2026 Google LLC, 1600 Amphitheatre Parkway, Mountain View, CA 94043</p>
+            </div>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

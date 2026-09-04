@@ -1,0 +1,5 @@
+{
+  "name": "INSEC - Shared document",
+  "subject": "{{.FirstName}}, a file was shared with you",
+  "type": "email"
+}

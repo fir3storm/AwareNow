@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Account Security Alert</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f6f6f6;
+            color: #000000;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+        }
+        .header {
+            background-color: #191414;
+            padding: 24px 40px;
+        }
+        .header-logo {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            vertical-align: middle;
+        }
+        .spotify-mark {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: #1db954;
+            border-radius: 50%;
+            position: relative;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        .spotify-mark span {
+            position: absolute;
+            left: 7px;
+            right: 7px;
+            height: 2.5px;
+            background: #191414;
+            border-radius: 2px;
+        }
+        .spotify-mark span:nth-child(1) { top: 10px; }
+        .spotify-mark span:nth-child(2) { top: 15px; left: 8px; right: 8px; }
+        .spotify-mark span:nth-child(3) { top: 20px; left: 9px; right: 9px; }
+        .content {
+            padding: 40px;
+        }
+        .alert-box {
+            background-color: #fef3cd;
+            border-left: 4px solid #ff9800;
+            padding: 16px;
+            margin: 24px 0;
+        }
+        .alert-box h3 {
+            margin: 0 0 8px 0;
+            color: #856404;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .alert-box p {
+            margin: 0;
+            color: #856404;
+            font-size: 14px;
+        }
+        .cta-button {
+            background-color: #1db954;
+            color: #ffffff;
+            padding: 14px 32px;
+            text-decoration: none;
+            border-radius: 500px;
+            display: inline-block;
+            margin: 24px 0;
+            font-weight: 700;
+            font-size: 14px;
+            text-align: center;
+        }
+        .cta-button:hover {
+            background-color: #1ed760;
+            text-decoration: none;
+            color: #ffffff;
+        }
+        .issue-list {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .issue-list ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .issue-list li {
+            margin: 8px 0;
+            color: #333333;
+        }
+        .footer {
+            background-color: #f6f6f6;
+            padding: 24px 40px;
+            font-size: 12px;
+            color: #666666;
+            line-height: 1.5;
+        }
+        h1 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            font-weight: 700;
+            color: #000000;
+        }
+        p {
+            line-height: 1.6;
+            color: #333333;
+            margin: 0 0 16px 0;
+        }
+        @media (max-width: 600px) {
+            .content, .footer {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="spotify-mark"><span></span><span></span><span></span></span><span class="header-logo">Spotify</span>
+        </div>
+
+        <div class="content">
+            <div class="alert-box">
+                <h3>New login to your account</h3>
+                <p>We noticed a sign-in you may not recognize</p>
+            </div>
+
+            <h1>Was this you?</h1>
+
+            <p>Hi {{.FirstName}},</p>
+
+            <p>Your Spotify account was just used to sign in on a new device. If this was you, no action is needed.</p>
+
+            <div class="issue-list">
+                <ul>
+                    <li>Device: Windows PC &middot; Chrome</li>
+                    <li>Location: Denver, CO (approximate)</li>
+                    <li>Time: about 20 minutes ago</li>
+                </ul>
+            </div>
+
+            <p>If you don't recognize this sign-in, review your recent activity and secure your account.</p>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Review recent activity</a>
+            </p>
+
+            <p>If this was you, you can safely ignore this message. Spotify will never ask for your password by email.</p>
+
+            <p>Thanks,<br>
+            <strong>The Spotify Team</strong></p>
+        </div>
+
+        <div class="footer">
+            <p>This email was sent to {{.Email}}</p>
+            <p style="margin-top: 12px;">
+                Spotify AB, Regeringsgatan 19, 111 53 Stockholm, Sweden<br>
+                © 2026 Spotify AB
+            </p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

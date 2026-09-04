@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Training: Microsoft Service Phishing</title>
+    <style>
+    :root {
+      --bg: #f5f6f8;
+      --surface: #ffffff;
+      --ink: #0f1b2d;
+      --body: #3a4656;
+      --muted: #6b7787;
+      --faint: #8a94a3;
+      --border: #e7eaee;
+      --hairline: #eef0f3;
+      --brand: #1b3a5b;
+      --brand-700: #142c46;
+      --brand-accent: #2b5d8a;
+      --danger: #c0392b;
+      --success: #1f7a4d;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.7;
+      margin: 0;
+      padding: 40px 20px;
+      background: var(--bg);
+      color: var(--body);
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 56px 60px;
+      box-shadow: 0 1px 3px rgba(15,27,45,.04), 0 12px 32px rgba(15,27,45,.05);
+    }
+
+    /* Header */
+    .header { text-align: left; margin: 0 0 36px; padding: 0; border: none; }
+    .header::before {
+      content: 'Security Awareness Training';
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--brand-accent);
+      margin-bottom: 14px;
+    }
+    h1 {
+      color: var(--ink);
+      font-size: 30px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -.02em;
+      margin: 0;
+    }
+
+    /* Typographic rhythm — whitespace does the work, not boxes */
+    h2 {
+      color: var(--ink);
+      font-size: 20px;
+      font-weight: 660;
+      letter-spacing: -.01em;
+      margin: 52px 0 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    h3 { color: var(--ink); font-size: 16.5px; font-weight: 650; margin: 28px 0 8px; }
+    h4 { color: var(--ink); font-size: 15px; font-weight: 650; margin: 0 0 8px; }
+    p { margin: 14px 0; }
+    ul, ol { margin: 14px 0; padding-left: 24px; }
+    li { margin: 8px 0; padding-left: 4px; }
+    li::marker { color: var(--faint); }
+    a { color: var(--brand-accent); text-decoration: underline; text-underline-offset: 2px; }
+    strong { color: var(--ink); font-weight: 650; }
+    section { margin: 0; }
+
+    /* Opening notice — one restrained neutral panel, no colored bar */
+    .alert, .caught-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin: 22px 0;
+      color: var(--body);
+    }
+    .alert strong, .caught-box strong { color: var(--ink); }
+    .alert-danger strong:first-child,
+    .alert-warning strong:first-child { color: var(--danger); }
+
+    /* Former colored callouts -> plain editorial flow (no fill, no border, no bar) */
+    .threat-scenario, .threat-tactics, .technique-box, .tactics-box, .scenario-box,
+    .suspicious-card, .advanced-threats, .danger-highlight,
+    .red-flags, .red-flags-list, .red-flags-section, .red-flag-list,
+    .protection-tips, .protection-box, .protection-strategies, .best-practices,
+    .good-habits, .verification-steps, .protect, .legitimate-card,
+    .why-box, .why-ai-box, .tool-box {
+      background: none;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+      margin: 18px 0;
+    }
+
+    /* Semantic cue via list markers, not containers */
+    .threat-scenario ul, .threat-tactics ul, .technique-box ul, .tactics-box ul,
+    .scenario-box ul, .suspicious-card ul, .advanced-threats ul,
+    .red-flags ul, .red-flags-list ul, .red-flags-section ul, .red-flag-list,
+    .protection-tips ul, .protection-box ul, .protection-strategies ul,
+    .best-practices ul, .good-habits, .verification-steps ul, .legitimate-card ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 14px 0;
+    }
+    .threat-scenario li, .threat-tactics li, .technique-box li, .tactics-box li,
+    .scenario-box li, .suspicious-card li, .advanced-threats li,
+    .red-flags li, .red-flags-list li, .red-flags-section li, .red-flag-list > li,
+    .protection-tips li, .protection-box li, .protection-strategies li,
+    .best-practices li, .good-habits > li, .verification-steps li, .legitimate-card li {
+      position: relative;
+      padding-left: 26px;
+      margin: 10px 0;
+      border: none;
+    }
+    /* danger / attack markers */
+    .threat-scenario li::before, .threat-tactics li::before, .technique-box li::before,
+    .tactics-box li::before, .scenario-box li::before, .suspicious-card li::before,
+    .advanced-threats li::before, .red-flags li::before, .red-flags-list li::before,
+    .red-flags-section li::before, .red-flag-list > li::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      top: .62em;
+      width: 7px;
+      height: 7px;
+      border-radius: 2px;
+      background: var(--danger);
+    }
+    /* positive / guidance markers */
+    .protection-tips li::before, .protection-box li::before, .protection-strategies li::before,
+    .best-practices li::before, .good-habits > li::before, .verification-steps li::before,
+    .legitimate-card li::before {
+      content: "\2713";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: var(--success);
+      font-weight: 700;
+    }
+    /* keep numbered protection steps as clean ordered lists */
+    .protection-tips ol, .protection-box ol, .verification-steps ol, .protect ol { list-style: decimal; padding-left: 22px; }
+    .protection-tips ol li::before, .protection-box ol li::before, .verification-steps ol li::before { content: none; }
+    .protection-tips ol li, .protection-box ol li, .verification-steps ol li { padding-left: 4px; }
+
+    /* explicit icon markers from source */
+    .flag-icon, .check-icon { display: none; }
+    .red-flag-item { display: flex; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--hairline); }
+    .red-flag-item:last-child { border-bottom: none; }
+    .red-flag-item::before { content: ""; flex: 0 0 auto; width: 7px; height: 7px; margin-top: .55em; border-radius: 2px; background: var(--danger); }
+    .flag-text { color: var(--body); }
+
+    /* Comparison: colored headings + markers, no fill */
+    .comparison-grid, .platform-examples {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 8px 36px;
+      margin: 18px 0;
+    }
+    .legitimate-card h4 { color: var(--success); }
+    .suspicious-card h4 { color: var(--danger); }
+    .suspicious-card li::before { content: ""; position: absolute; left: 4px; top: .62em; width: 7px; height: 7px; border-radius: 2px; background: var(--danger); }
+    .suspicious-card ul, .suspicious-card { list-style: none; }
+    .suspicious-card li { position: relative; padding-left: 26px; }
+
+    /* Card grids -> clean white cards, hairline border, no colored bar */
+    .threat-types, .services-grid, .platforms-grid, .government-types {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin: 18px 0;
+    }
+    .threat-card, .service-card, .platform-card, .agency-card, .comparison-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin: 0;
+    }
+    .threat-card h4, .service-card h4, .platform-card h4, .agency-card h4 { color: var(--ink); }
+
+    /* Stats -> light, borderless metric blocks (no navy fill, no box) */
+    .stat-box, .statistics-highlight, .cost-impact {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 22px;
+      margin: 18px 0;
+      color: var(--body);
+    }
+    .stat-num { font-size: 30px; font-weight: 700; color: var(--brand); line-height: 1.1; }
+
+    /* Quiz -> single subtle panel */
+    .quiz-section, .quiz, .quiz-question {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 26px;
+      margin: 28px 0;
+    }
+    .quiz-option { display: block; padding: 5px 0; }
+    .correct { color: var(--success); font-weight: 650; }
+    details { margin-top: 14px; }
+    details summary { cursor: pointer; color: var(--brand-accent); font-weight: 600; }
+    details > div { margin-top: 10px; }
+    input[type=radio] { margin-right: 9px; }
+    label { color: var(--body); }
+
+    /* Closing CTA — the one deliberate color block */
+    .footer, .footer-cta, .cta-section, .hero {
+      text-align: center;
+      margin: 44px 0 0;
+      padding: 36px 32px;
+      background: var(--brand);
+      color: #fff;
+      border-radius: var(--radius);
+    }
+    .footer *, .footer-cta *, .cta-section *, .hero * { color: #fff; }
+    .footer h2, .footer-cta h2, .cta-section h2, .hero h2 { border-bottom: none; color: #fff; margin-top: 0; }
+    .hero-label { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.75); }
+    .footer a, .cta-section a, .hero a { color: #fff; }
+    .btn {
+      display: inline-block;
+      background: #fff;
+      color: var(--brand) !important;
+      padding: 12px 26px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 650;
+      margin-top: 14px;
+    }
+    .emoji { font-style: normal; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Microsoft Service Phishing - Security Training</h1>
+            <div class="alert alert-warning">
+                <strong>You clicked on a simulated Microsoft phishing email!</strong><br>
+                This training will help you recognize and avoid Microsoft service impersonation attacks.
+            </div>
+        </div>
+
+        <section>
+            <h2>Why Microsoft Phishing Works</h2>
+            <p>Microsoft phishing attacks are highly effective because:</p>
+            <ul>
+                <li><strong>Universal Usage:</strong> Most people use Microsoft products daily</li>
+                <li><strong>Business Integration:</strong> Microsoft services are critical to organizations</li>
+                <li><strong>Trust Factor:</strong> People trust Microsoft security communications</li>
+                <li><strong>Security Context:</strong> Security alerts create urgency and bypass skepticism</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>Commonly Targeted Services</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <h4>Outlook/Office 365</h4>
+                    <p>Email security alerts, mailbox upgrades</p>
+                </div>
+                <div class="service-card">
+                    <h4>OneDrive</h4>
+                    <p>File sharing, storage notifications</p>
+                </div>
+                <div class="service-card">
+                    <h4>Teams</h4>
+                    <p>Meeting invites, collaboration requests</p>
+                </div>
+                <div class="service-card">
+                    <h4>Azure/Active Directory</h4>
+                    <p>Account verification, security updates</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>Red Flags You Should Have Noticed</h2>
+            <div class="red-flags-list">
+                <h3>Warning Signs in Microsoft Phishing:</h3>
+                <ul>
+                    <li><strong>Sender Domain:</strong> Not from @microsoft.com</li>
+                    <li><strong>Generic Greetings:</strong> "Dear Customer" instead of your name</li>
+                    <li><strong>Urgent Language:</strong> "Immediate action required"</li>
+                    <li><strong>Suspicious Links:</strong> URLs not going to official Microsoft domains</li>
+                    <li><strong>Poor Design:</strong> Low-quality graphics or inconsistent branding</li>
+                    <li><strong>Unexpected Requests:</strong> Asking for information Microsoft already has</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>How to Verify Microsoft Communications</h2>
+            <div class="protection-tips">
+                <h3>Verification Steps:</h3>
+                <ol>
+                    <li><strong>Check sender domain:</strong> Legitimate emails come from @microsoft.com</li>
+                    <li><strong>Log in directly:</strong> Go to the Microsoft service website independently</li>
+                    <li><strong>Check your account dashboard:</strong> Look for notifications in your actual account</li>
+                    <li><strong>Review URL destinations:</strong> Hover over links to see where they lead</li>
+                    <li><strong>Contact IT support:</strong> Ask your IT team about suspicious communications</li>
+                </ol>
+            </div>
+        </section>
+
+        <section>
+            <h2>What Attackers Were After</h2>
+            <div class="alert alert-info">
+                <strong>This attack aimed to steal:</strong>
+                <ul>
+                    <li>Your Microsoft account credentials</li>
+                    <li>Access to your Office 365 or business email</li>
+                    <li>OneDrive files and documents</li>
+                    <li>Corporate data and communications</li>
+                </ul>
+                <p><strong>Impact:</strong> Compromised Microsoft accounts can lead to business email compromise, data theft, and further attacks on colleagues.</p>
+            </div>
+        </section>
+
+        <section>
+            <h2>Microsoft Security Quiz</h2>
+            <div class="quiz-section">
+                <p><strong>Scenario:</strong> You receive "Microsoft Security Alert: Suspicious login from Russia" from "security-alerts@microsoftsecurity.net" asking you to click a link. What should you do?</p>
+
+                <div style="margin: 15px 0;">
+                    <input type="radio" id="q1c" name="q1" value="c">
+                    <label for="q1c">Log into my Microsoft account directly to check for alerts</label><br>
+
+                    <input type="radio" id="q1a" name="q1" value="a">
+                    <label for="q1a">Click the link immediately to secure my account</label><br>
+
+                    <input type="radio" id="q1d" name="q1" value="d">
+                    <label for="q1d">Forward the email to my IT department</label>
+                </div>
+
+                <details style="margin-top: 20px;">
+                    <summary style="cursor: pointer; color: #1b3a5b; font-weight: 600;"><strong>Click for Answer</strong></summary>
+                    <div style="background: transparent; padding: 15px; margin-top: 10px; border-radius: 5px;">
+                        <p><strong>Correct: First option + reporting to IT.</strong> Always log into Microsoft services directly. The domain "microsoftsecurity.net" is not legitimate (@microsoft.com is correct).</p>
+                    </div>
+                </details>
+            </div>
+        </section>
+
+        <section>
+            <h2>Essential Protection Steps</h2>
+            <div class="protection-tips">
+                <h3>Immediate Actions:</h3>
+                <ul>
+                    <li><strong>Enable MFA:</strong> Multi-factor authentication on all Microsoft accounts</li>
+                    <li><strong>Review Security:</strong> Check account security settings regularly</li>
+                    <li><strong>Verify Communications:</strong> Always check through official channels</li>
+                    <li><strong>Report Suspicious Emails:</strong> Forward to your IT security team</li>
+                    <li><strong>Stay Updated:</strong> Learn about Microsoft security features</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>If You've Been Compromised</h2>
+            <div class="alert alert-warning">
+                <h3>Emergency Response:</h3>
+                <ol>
+                    <li><strong>Change password</strong> from a secure device</li>
+                    <li><strong>Review security info</strong> and remove unauthorized methods</li>
+                    <li><strong>Check sign-in activity</strong> for unauthorized access</li>
+                    <li><strong>Revoke app permissions</strong> for suspicious applications</li>
+                    <li><strong>Notify IT security</strong> immediately</li>
+                </ol>
+            </div>
+        </section>
+
+        <section class="cta-section" style="text-align: center; margin-top: 40px; padding: 20px; background: #1b3a5b; color: white; border-radius: 8px;">
+            <h2>Training Complete!</h2>
+            <p>You're now better equipped to identify Microsoft service phishing attacks!</p>
+
+            <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                <h3>Key Takeaways:</h3>
+                <ul style="text-align: left; display: inline-block;">
+                    <li>Always verify through official Microsoft channels</li>
+                    <li>Check sender domains (@microsoft.com is legitimate)</li>
+                    <li>Log into services directly when receiving alerts</li>
+                    <li>Enable MFA on all accounts</li>
+                    <li>Report suspicious emails to IT</li>
+                </ul>
+            </div>
+
+            <p><strong>Questions?</strong> Contact our Security Team at security@company.com</p>
+        </section>
+    </div>
+</body>
+</html>

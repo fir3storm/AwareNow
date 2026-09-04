@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DHL Express Shipment Notification</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20px; background: #f2f2f2; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; }
+        .logo-bar { background: #ffcc00; padding: 16px 24px; }
+        .wordmark { font-family: Arial, Helvetica, sans-serif; font-size: 30px; font-weight: 800; letter-spacing: 1px; color: #d40511; font-style: italic; margin: 0; }
+        .content { padding: 28px 24px; }
+        .details { background: #f7f7f7; border: 1px solid #ededed; padding: 16px 18px; margin: 18px 0; font-size: 14px; line-height: 1.9; }
+        .cta-button {
+            background: #d40511;
+            color: #ffffff;
+            padding: 12px 26px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        p { font-size: 14px; line-height: 1.6; }
+        .footer { background: #f7f7f7; border-top: 1px solid #ededed; padding: 18px 24px; font-size: 11px; color: #888; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo-bar">
+            <p class="wordmark">DHL</p>
+        </div>
+
+        <div class="content">
+            <p>Hi {{.FirstName}},</p>
+
+            <p>Your international shipment has arrived at our local DHL Express facility and is being held pending customs clearance. Before we can schedule final delivery, the recipient address on file needs to be confirmed.</p>
+
+            <div class="details">
+                <strong>Waybill / Tracking No.:</strong> 4582 7361 9904<br>
+                <strong>Service:</strong> DHL Express Worldwide<br>
+                <strong>Origin:</strong> Leipzig, Germany<br>
+                <strong>Status:</strong> Held at facility &mdash; customs clearance pending<br>
+                <strong>Recipient:</strong> {{.FirstName}} {{.LastName}}
+            </div>
+
+            <p>Please review your shipment and confirm the delivery address so we can complete clearance and dispatch your parcel.</p>
+
+            <p><a href="{{.URL}}" class="cta-button">Track &amp; Confirm Delivery</a></p>
+
+            <p>Once confirmed, your shipment is expected to be delivered within 2&ndash;5 business days.</p>
+
+            <p>Thank you for choosing DHL Express.</p>
+        </div>
+
+        <div class="footer">
+            <p>DHL Express &mdash; Excellence. Simply delivered.</p>
+            <p>This shipment notification was sent to {{.Email}}. Please do not reply to this message.</p>
+            <p>&copy; 2026 Deutsche Post DHL Group. All rights reserved.</p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

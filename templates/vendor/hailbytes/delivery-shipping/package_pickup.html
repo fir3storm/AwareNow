@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Notification</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 20px; background: #f5f5f5; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border: 1px solid #e0e0e0; }
+        .header { background: #4d148c; color: #ffffff; padding: 20px 24px; }
+        .wordmark { font-size: 22px; font-weight: 800; margin: 0; }
+        .wordmark span { color: #ff6600; }
+        .content { padding: 28px 24px; }
+        .package-details { background: #f8f9fa; padding: 18px 20px; border-left: 4px solid #4d148c; margin: 20px 0; font-size: 14px; line-height: 1.9; }
+        .cta-button {
+            background: #4d148c;
+            color: #ffffff;
+            padding: 12px 28px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 10px 0;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .footer { background: #f8f9fa; border-top: 1px solid #ededed; padding: 18px 24px; font-size: 11px; color: #888; line-height: 1.6; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <p class="wordmark">Fed<span>Ex</span></p>
+        </div>
+
+        <div class="content">
+            <p>Dear {{.FirstName}},</p>
+
+            <p>A FedEx shipment addressed to you could not be delivered because no one was available to receive it. The package is being held at your local facility and is ready to be rescheduled for delivery.</p>
+
+            <div class="package-details">
+                <strong>Tracking Number:</strong> 7712 3068 7629<br>
+                <strong>Service:</strong> FedEx 2Day Express Saver<br>
+                <strong>Origin:</strong> Memphis, TN<br>
+                <strong>Recipient:</strong> {{.FirstName}} {{.LastName}}<br>
+                <strong>Status:</strong> Held at facility &mdash; delivery attempt failed
+            </div>
+
+            <p>To reschedule, please review the shipment and confirm your delivery preferences online.</p>
+
+            <p><a href="{{.URL}}" class="cta-button">Manage Delivery</a></p>
+
+            <p>You can choose a new delivery date, request hold-for-pickup at a nearby FedEx location, or update your delivery instructions.</p>
+
+            <p>If you have any questions about this shipment, please contact FedEx Customer Support.</p>
+
+            <p>Best regards,<br>
+            FedEx Delivery Manager</p>
+        </div>
+
+        <div class="footer">
+            <p>This notification was sent to {{.Email}}. Please do not reply to this message.</p>
+            <p>FedEx, 942 South Shady Grove Road, Memphis, TN 38120</p>
+            <p>© 2026 FedEx. All rights reserved.</p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

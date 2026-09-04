@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Shared document</title></head>
+<body style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#222;line-height:1.5;">
+<p>Hello {{.FirstName}} {{.LastName}},</p>
+<p>A document was shared with you: <strong>Q3_Access_Review.xlsx</strong></p>
+<p>Open it to review your access before the audit deadline on Friday.</p>
+<p style="margin:24px 0;">
+  <a href="{{.URL}}" style="background:#107c10;color:#fff;padding:10px 18px;text-decoration:none;border-radius:4px;display:inline-block;">Open document</a>
+</p>
+<p style="color:#666;font-size:12px;">Shared via IT Support file portal</p>
+{{.Tracker}}
+</body>
+</html>

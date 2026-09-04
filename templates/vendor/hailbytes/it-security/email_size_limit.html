@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mailbox storage almost full</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f4f5f7;
+            margin: 0;
+            padding: 20px;
+            color: #1d2125;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #e3e6ea;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .header {
+            background: #0c2d57;
+            color: white;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        .content { padding: 28px 24px; font-size: 14px; line-height: 1.55; }
+        .quota-info {
+            background: #f4f5f7;
+            padding: 18px 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+            border: 1px solid #e3e6ea;
+            font-size: 13px;
+        }
+        .quota-info h4 { margin: 0 0 10px; font-size: 14px; }
+        .cta-button {
+            background: #0c2d57;
+            color: white;
+            padding: 12px 26px;
+            text-decoration: none;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 4px;
+            height: 14px;
+            margin: 12px 0 6px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            background: #d97706;
+            height: 100%;
+            width: 99%;
+        }
+        .footer { font-size: 12px; color: #6b778c; padding: 0 24px 24px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">Mailbox storage</div>
+
+        <div class="content">
+            <p>Dear {{.FirstName}},</p>
+
+            <p>Your mailbox ({{.Email}}) is almost full. When it reaches its limit you may stop receiving new messages, so we recommend freeing up space soon.</p>
+
+            <div class="quota-info">
+                <h4>Current storage</h4>
+                <p style="margin:0;"><strong>Usage:</strong> 49.5 GB of 50 GB (99%)</p>
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+                <p style="margin:0; color:#6b778c;">Recommended action below 95%</p>
+            </div>
+
+            <p>To free up space you can empty Deleted Items, archive older mail, or remove large attachments. You can review and manage your mailbox storage here:</p>
+
+            <p style="text-align: center;">
+                <a href="{{.URL}}" class="cta-button">Manage mailbox storage</a>
+            </p>
+
+            <p>If you need help, contact the IT Help Desk at extension 2847.</p>
+
+            <p>Thanks,<br>
+            <strong>Marcus Bell</strong><br>
+            IT Service Desk</p>
+
+            <hr style="margin: 28px 0; border: none; border-top: 1px solid #e3e6ea;">
+
+            <p style="font-size: 12px; color: #6b778c;">
+                Reference: 7783104<br>
+                Generated {{.Date}}. This is an automated message; please do not reply.
+            </p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>

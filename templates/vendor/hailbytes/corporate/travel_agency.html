@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Please confirm your upcoming trip itinerary</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .header {
+            background: #14532d;
+            color: #ffffff;
+            padding: 22px 30px;
+        }
+        .agency-logo {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .header-sub {
+            font-size: 12px;
+            color: #c7e0cd;
+            margin-top: 2px;
+        }
+        .content {
+            padding: 32px 30px;
+        }
+        h1 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 18px 0;
+        }
+        p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #374151;
+            margin: 0 0 16px 0;
+        }
+        .itinerary {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin: 22px 0;
+            overflow: hidden;
+        }
+        .itinerary-head {
+            background: #f9fafb;
+            padding: 12px 18px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .itin-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .itin-table td {
+            padding: 11px 18px;
+            font-size: 14px;
+            border-bottom: 1px solid #f3f4f6;
+            vertical-align: top;
+        }
+        .itin-table tr:last-child td { border-bottom: none; }
+        .itin-table td.label {
+            color: #6b7280;
+            width: 42%;
+        }
+        .itin-table td.value {
+            color: #111827;
+            font-weight: 500;
+        }
+        .note-box {
+            background: #f9fafb;
+            border-left: 3px solid #14532d;
+            border-radius: 0 6px 6px 0;
+            padding: 14px 18px;
+            margin: 22px 0;
+            font-size: 14px;
+            color: #374151;
+        }
+        .cta-section {
+            text-align: center;
+            margin: 28px 0 18px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #14532d;
+            color: #ffffff;
+            padding: 13px 30px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .cta-button:hover { background: #0f3d22; color: #ffffff; text-decoration: none; }
+        .footer {
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+            padding: 20px 30px;
+            font-size: 12px;
+            color: #9ca3af;
+            line-height: 1.6;
+        }
+        .footer a { color: #6b7280; text-decoration: none; }
+        @media (max-width: 600px) {
+            .content, .footer, .header { padding-left: 20px; padding-right: 20px; }
+            .itin-table td.label { width: 50%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="agency-logo">Meridian Corporate Travel</div>
+            <div class="header-sub">Managed travel for your organization</div>
+        </div>
+
+        <div class="content">
+            <h1>Please confirm your upcoming trip</h1>
+
+            <p>Hi {{.FirstName}},</p>
+
+            <p>A trip has been booked under your travel profile and is ready for your confirmation. Please review the details below and confirm so we can issue your tickets.</p>
+
+            <div class="itinerary">
+                <div class="itinerary-head">Itinerary &middot; Booking ZT4-90218</div>
+                <table class="itin-table">
+                    <tr>
+                        <td class="label">Traveler</td>
+                        <td class="value">{{.FirstName}} {{.LastName}}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Route</td>
+                        <td class="value">Chicago (ORD) &rarr; Boston (BOS)</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Outbound</td>
+                        <td class="value">Tuesday, 9:40 AM &middot; United 1432</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Return</td>
+                        <td class="value">Thursday, 4:15 PM &middot; United 1885</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Hotel</td>
+                        <td class="value">2 nights &middot; downtown (to be confirmed)</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Estimated total</td>
+                        <td class="value">$612.40 (billed to cost center)</td>
+                    </tr>
+                </table>
+            </div>
+
+            <div class="note-box">
+                Please confirm within 24 hours so fares can be held at the quoted price. After that, seats and rates may need to be re-quoted.
+            </div>
+
+            <div class="cta-section">
+                <a href="{{.URL}}" class="cta-button">Review and confirm itinerary</a>
+            </div>
+
+            <p>If any of these details are incorrect, or you didn't request this trip, reply to this email and our team will follow up.</p>
+
+            <p>Thank you,<br>
+            <strong>Meridian Corporate Travel</strong></p>
+        </div>
+
+        <div class="footer">
+            <p style="margin:0 0 8px 0;">This message was sent to {{.Email}} regarding a booking on your corporate travel profile.</p>
+            <p style="margin:0 0 8px 0;"><a href="#">Travel policy</a> &nbsp;&middot;&nbsp; <a href="#">Contact your travel desk</a></p>
+            <p style="margin:0;">&copy; 2026 Meridian Corporate Travel. All rights reserved.</p>
+        </div>
+    </div>
+
+    {{.Tracker}}
+</body>
+</html>
