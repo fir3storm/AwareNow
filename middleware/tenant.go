@@ -51,12 +51,15 @@ func TenantResolver(next http.Handler) http.Handler {
 		tenantID := r.Header.Get("X-Tenant-ID")
 		if tenantID != "" {
 			var id uint
-			if _, err := fmt.Sscanf(tenantID, "%d", &id); err == nil {
+			if _, err := fmt.Sscanf(tenantID, "%d", &id); err == nil && id > 0 {
 				tenant, err = tm.GetTenant(id)
 				if err != nil {
 					tenantJSONError(w, http.StatusUnauthorized, "Invalid tenant ID")
 					return
 				}
+			} else {
+				tenantJSONError(w, http.StatusBadRequest, "Invalid tenant ID format")
+				return
 			}
 		}
 

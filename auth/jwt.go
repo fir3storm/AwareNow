@@ -48,6 +48,7 @@ type Claims struct {
 }
 
 func GenerateJWT(userID uint, username, role string) (string, error) {
+	secretOnceInit()
 	claims := &Claims{
 		UserID:   userID,
 		Username: username,
@@ -64,6 +65,7 @@ func GenerateJWT(userID uint, username, role string) (string, error) {
 }
 
 func ValidateJWT(tokenString string) (*Claims, error) {
+	secretOnceInit()
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("unexpected signing method")
@@ -83,5 +85,6 @@ func ValidateJWT(tokenString string) (*Claims, error) {
 }
 
 func SetJWTSecret(secret string) {
+	secretOnceInit()
 	jwtSecret = []byte(secret)
 }

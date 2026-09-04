@@ -217,3 +217,8 @@ func GetResult(rid string) (Result, error) {
 	err := db.Where("r_id=?", rid).First(&r).Error
 	return r, err
 }
+
+// SaveResult saves the given Result to the database
+func SaveResult(r *Result) error {
+	return db.Save(r).Error
+}

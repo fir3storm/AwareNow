@@ -27,6 +27,8 @@ func (as *Server) Campaigns(w http.ResponseWriter, r *http.Request) {
 		cs, err := models.GetCampaigns(ctx.Get(r, "user_id").(int64))
 		if err != nil {
 			log.Error(err)
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+			return
 		}
 		JSONResponse(w, cs, http.StatusOK)
 	//POST: Create a new campaign and return it as JSON
@@ -192,7 +194,8 @@ func (as *Server) Campaign(w http.ResponseWriter, r *http.Request) {
 	case r.Method == "DELETE":
 		err = models.DeleteCampaign(id)
 		if err != nil {
-			JSONResponse(w, models.Response{Success: false, Message: "Error deleting campaign"}, http.StatusInternalServerError)
+			log.Error(err)
+			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
 			return
 		}
 		JSONResponse(w, models.Response{Success: true, Message: "Campaign deleted successfully!"}, http.StatusOK)

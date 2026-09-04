@@ -62,11 +62,11 @@ func (rl *RateLimiter) RegisterProfile(smtpID int64, maxPerHour int, minDelay ti
 // hour has not yet reset.
 func (rl *RateLimiter) WaitForSend(smtpID int64) error {
 	rl.mu.Lock()
-	defer rl.mu.Unlock()
 
 	usage, ok := rl.profileUsage[smtpID]
 	if !ok {
 		// Unregistered profiles are allowed without restriction.
+		rl.mu.Unlock()
 		return nil
 	}
 
@@ -80,6 +80,7 @@ func (rl *RateLimiter) WaitForSend(smtpID int64) error {
 
 	// Check if the hourly cap is reached.
 	if usage.CurrentCount >= usage.MaxPerHour {
+		rl.mu.Unlock()
 		return &RateLimitError{
 			SMTPID:    smtpID,
 			ResetTime: usage.HourResetTime,
@@ -104,6 +105,7 @@ func (rl *RateLimiter) WaitForSend(smtpID int64) error {
 				usage.HourResetTime = now.Add(time.Hour)
 			}
 			if usage.CurrentCount >= usage.MaxPerHour {
+				rl.mu.Unlock()
 				return &RateLimitError{
 					SMTPID:    smtpID,
 					ResetTime: usage.HourResetTime,
@@ -114,6 +116,7 @@ func (rl *RateLimiter) WaitForSend(smtpID int64) error {
 
 	usage.CurrentCount++
 	usage.LastSentTime = time.Now()
+	rl.mu.Unlock()
 	return nil
 }
 

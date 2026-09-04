@@ -161,7 +161,10 @@ func (m *MailLog) GetSmtpFrom() (string, error) {
 	}
 
 	f, err := mail.ParseAddress(c.SMTP.FromAddress)
-	return f.Address, err
+	if err != nil {
+		return "", err
+	}
+	return f.Address, nil
 }
 
 // Generate fills in the details of a gomail.Message instance with
@@ -292,8 +295,7 @@ func LockMailLogs(ms []*MailLog, lock bool) error {
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit().Error
 }
 
 // UnlockAllMailLogs removes the processing lock for all maillogs

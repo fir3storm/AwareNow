@@ -208,7 +208,7 @@ func Setup(c *config.Config) error {
 		return err
 	}
 	if userCount == 0 {
-		adminUser := User{
+		adminUser = User{
 			Username:               DefaultAdminUsername,
 			Role:                   adminRole,
 			RoleID:                 adminRole.ID,

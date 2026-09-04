@@ -195,13 +195,7 @@ func exportCSV(w http.ResponseWriter, r *http.Request, uid int64) {
 	}
 
 	// Type assert to get the export data structure
-	exportData, ok := data.(struct {
-		Overview    models.AnalyticsOverview  `json:"overview"`
-		Timeline    []models.TimelineData     `json:"timeline"`
-		Departments []models.DepartmentStats  `json:"departments"`
-		Trends      []models.TrendData        `json:"trends"`
-		RiskScore   models.RiskScoreBreakdown `json:"risk_score"`
-	})
+	exportData, ok := data.(models.AnalyticsExportData)
 	if !ok {
 		// Fallback: generate CSV from individual API calls
 		generateCSVFromAnalytics(w, uid)
@@ -263,7 +257,11 @@ func exportCSV(w http.ResponseWriter, r *http.Request, uid int64) {
 		fmt.Sprintf("%.2f%%", exportData.RiskScore.ReportRate),
 	})
 
-	writer.Flush()
+	if err := writer.Flush(); err != nil {
+		log.Errorf("error flushing CSV writer: %v", err)
+		JSONResponse(w, models.Response{Success: false, Message: "Error generating CSV"}, http.StatusInternalServerError)
+		return
+	}
 
 	// Set headers for file download
 	filename := fmt.Sprintf("analytics_export_%s.csv", time.Now().Format("20060102_150405"))

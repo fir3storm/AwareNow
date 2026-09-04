@@ -189,7 +189,7 @@ func (ps *PhishingServer) TrackHandler(w http.ResponseWriter, r *http.Request) {
 	// Update total_opens counter and last_activity
 	rs.TotalOpens++
 	rs.LastActivity = time.Now().UTC()
-	err = db.Save(&rs).Error
+	err = models.SaveResult(&rs)
 	if err != nil {
 		log.Errorf("error updating result opens counter: %v", err)
 	}
@@ -274,7 +274,7 @@ func (ps *PhishingServer) TrackDetailsHandler(w http.ResponseWriter, r *http.Req
 
 	// Update last_activity timestamp
 	rs.LastActivity = time.Now().UTC()
-	db.Save(&rs)
+	models.SaveResult(&rs)
 
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -390,7 +390,7 @@ func (ps *PhishingServer) BehaviorEventsHandler(w http.ResponseWriter, r *http.R
 
 	// Update result tracking metadata
 	rs.LastActivity = time.Now().UTC()
-	db.Save(&rs)
+	models.SaveResult(&rs)
 
 	api.JSONResponse(w, models.Response{
 		Success: true,
@@ -512,19 +512,20 @@ func (ps *PhishingServer) PhishHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		rs.LastActivity = time.Now().UTC()
 		rs.TotalClicks++
-		db.Save(&rs)
+		models.SaveResult(&rs)
 	case r.Method == "POST":
 		err = rs.HandleFormSubmit(d)
 		if err != nil {
 			log.Error(err)
 		}
 		rs.LastActivity = time.Now().UTC()
-		db.Save(&rs)
+		models.SaveResult(&rs)
 	}
 	ptx, err = models.NewPhishingTemplateContext(&c, rs.BaseRecipient, rs.RId)
 	if err != nil {
 		log.Error(err)
 		http.NotFound(w, r)
+		return
 	}
 	renderPhishResponse(w, r, ptx, p)
 }

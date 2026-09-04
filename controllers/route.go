@@ -187,8 +187,25 @@ type templateParams struct {
 // newTemplateParams returns the default template parameters for a user and
 // the CSRF token.
 func newTemplateParams(r *http.Request) templateParams {
-	user := ctx.Get(r, "user").(models.User)
-	session := ctx.Get(r, "session").(*sessions.Session)
+	userVal := ctx.Get(r, "user")
+	if userVal == nil {
+		return templateParams{
+			Token:   csrf.Token(r),
+			Version: config.Version,
+		}
+	}
+	user := userVal.(models.User)
+	sessionVal := ctx.Get(r, "session")
+	if sessionVal == nil {
+		modifySystem, _ := user.HasPermission(models.PermissionModifySystem)
+		return templateParams{
+			Token:        csrf.Token(r),
+			User:         user,
+			ModifySystem: modifySystem,
+			Version:      config.Version,
+		}
+	}
+	session := sessionVal.(*sessions.Session)
 	modifySystem, _ := user.HasPermission(models.PermissionModifySystem)
 	return templateParams{
 		Token:        csrf.Token(r),
@@ -303,7 +320,10 @@ func (as *AdminServer) nextOrIndex(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		path := url.EscapedPath()
 		if path != "" {
-			next = "/" + strings.TrimLeft(path, "/")
+			// Validate that the next parameter is a local path to prevent open redirect
+			if strings.HasPrefix(path, "/") && !strings.HasPrefix(path, "//") && !strings.HasPrefix(path, "///") {
+				next = "/" + strings.TrimLeft(path, "/")
+			}
 		}
 	}
 	http.Redirect(w, r, next, http.StatusFound)
@@ -349,6 +369,14 @@ func (as *AdminServer) Impersonate(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		session := ctx.Get(r, "session").(*sessions.Session)
+		// Regenerate session to prevent session fixation attacks
+		// Clear all existing session values
+		for key := range session.Values {
+			delete(session.Values, key)
+		}
+		// Save the cleared session first
+		session.Save(r, w)
+		// Set the new user ID
 		session.Values["id"] = u.Id
 		session.Save(r, w)
 	}

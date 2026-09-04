@@ -48,14 +48,15 @@ func SpaHandler() http.Handler {
 		// Clean the path
 		path := filepath.Clean(r.URL.Path)
 
-		// Prevent path traversal
-		if strings.Contains(path, "..") {
+		// Prevent path traversal using filepath.Rel for robust validation
+		relPath, err := filepath.Rel(distDir, filepath.Join(distDir, path))
+		if err != nil || strings.HasPrefix(relPath, "..") {
 			http.Error(w, "Invalid path", http.StatusBadRequest)
 			return
 		}
 
 		// Check if the requested file exists
-		filePath := filepath.Join(distDir, path)
+		filePath := filepath.Join(distDir, relPath)
 		info, err := os.Stat(filePath)
 		if err == nil && !info.IsDir() {
 			// File exists, serve it

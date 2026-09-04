@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/textproto"
+	"sync"
 	"time"
 
 	log "github.com/fir3storm/AwareNow/logger"
@@ -67,6 +69,7 @@ type MailWorker struct {
 	batchQueue  chan *BatchMail
 	rateLimiter *RateLimiter
 	sendDelay   time.Duration
+	wg          sync.WaitGroup
 }
 
 // NewMailWorker returns an instance of MailWorker with the mail queue
@@ -97,9 +100,12 @@ func (mw *MailWorker) Start(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			mw.wg.Wait()
 			return
 		case ms := <-mw.queue:
+			mw.wg.Add(1)
 			go func(ctx context.Context, ms []Mail) {
+				defer mw.wg.Done()
 				dialer, err := ms[0].GetDialer()
 				if err != nil {
 					errorMail(err, ms)
@@ -108,7 +114,9 @@ func (mw *MailWorker) Start(ctx context.Context) {
 				sendMailWithDelay(ctx, dialer, ms, mw.sendDelay)
 			}(ctx, ms)
 		case batch := <-mw.batchQueue:
+			mw.wg.Add(1)
 			go func(ctx context.Context, batch *BatchMail) {
+				defer mw.wg.Done()
 				dialer, err := batch.Mails[0].GetDialer()
 				if err != nil {
 					errorMail(err, batch.Mails)
@@ -154,7 +162,7 @@ func dialHost(ctx context.Context, dialer Dialer) (Sender, error) {
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, nil
+			return nil, ctx.Err()
 		default:
 			break
 		}
@@ -168,6 +176,16 @@ func dialHost(ctx context.Context, dialer Dialer) (Sender, error) {
 				underlyingError: err,
 			}
 			break
+		}
+		// Exponential backoff: 2^attempt seconds (capped at 60s)
+		backoffDuration := time.Duration(math.Pow(2, float64(sendAttempt))) * time.Second
+		if backoffDuration > 60*time.Second {
+			backoffDuration = 60 * time.Second
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(backoffDuration):
 		}
 	}
 	return sender, err

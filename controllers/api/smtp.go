@@ -98,7 +98,7 @@ func (as *Server) SendingProfile(w http.ResponseWriter, r *http.Request) {
 // SMTPUsage returns the current hour usage statistics for an SMTP profile
 func (as *Server) SMTPUsage(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
-		JSONResponse(w, models.Response{Success: false, Message: "Method not allowed"}, http.StatusBadRequest)
+		JSONResponse(w, models.Response{Success: false, Message: "Method not allowed"}, http.StatusMethodNotAllowed)
 		return
 	}
 

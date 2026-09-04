@@ -1,6 +1,8 @@
 package api
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	mid "github.com/fir3storm/AwareNow/middleware"
@@ -107,6 +109,18 @@ func (as *Server) registerRoutes() {
 	router.HandleFunc("/admin/tenants/{id:[0-9]+}/stats", mid.Use(as.TenantStats, mid.RequirePermission(models.PermissionModifySystem)))
 	// Behavior events routes
 	router.HandleFunc("/behavior-events", as.BehaviorEvents).Methods("POST", "GET")
+
+	// Add a default handler for unsupported HTTP methods on all routes
+	router.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		response := map[string]interface{}{
+			"success": false,
+			"message": fmt.Sprintf("Method %s not allowed", r.Method),
+		}
+		json.NewEncoder(w).Encode(response)
+	})
+
 	as.handler = router
 }
 

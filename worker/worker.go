@@ -86,7 +86,7 @@ func selectRoundRobinSMTP(state *smtpSendState, campaignSMTPs []models.CampaignS
 	for i := 0; i < n; i++ {
 		idx := state.currentIndex % n
 		state.currentIndex++
-		smtpID := campaignSMTPs[idx].SMTPId
+		smtpID := campaignSMTPs[idx].SMTPID
 		if maxPerProfile <= 0 || state.smtpSentCounts[smtpID] < maxPerProfile {
 			return idx
 		}
@@ -100,12 +100,16 @@ func selectRandomSMTP(state *smtpSendState, campaignSMTPs []models.CampaignSMTP,
 	// Build list of available SMTP indices
 	available := make([]int, 0, len(campaignSMTPs))
 	for i, cs := range campaignSMTPs {
-		if maxPerProfile <= 0 || state.smtpSentCounts[cs.SMTPId] < maxPerProfile {
+		if maxPerProfile <= 0 || state.smtpSentCounts[cs.SMTPID] < maxPerProfile {
 			available = append(available, i)
 		}
 	}
 	if len(available) == 0 {
-		return 0 // All at max, fall back to first
+		// All at max - reset counts and fall back to first
+		for _, cs := range campaignSMTPs {
+			state.smtpSentCounts[cs.SMTPID] = 0
+		}
+		return 0
 	}
 	return available[rand.Intn(len(available))]
 }
@@ -115,7 +119,7 @@ func selectLeastUsedSMTP(state *smtpSendState, campaignSMTPs []models.CampaignSM
 	bestIdx := 0
 	bestCount := int64(-1)
 	for i, cs := range campaignSMTPs {
-		count := state.smtpSentCounts[cs.SMTPId]
+		count := state.smtpSentCounts[cs.SMTPID]
 		if maxPerProfile > 0 && count >= maxPerProfile {
 			continue
 		}
@@ -143,7 +147,7 @@ func distributeEmails(ms []mailer.Mail, campaignSMTPs []models.CampaignSMTP, dc 
 		if idx < 0 {
 			idx = 0
 		}
-		smtpID := campaignSMTPs[idx].SMTPId
+		smtpID := campaignSMTPs[idx].SMTPID
 		grouped[smtpID] = append(grouped[smtpID], m)
 		state.mu.Lock()
 		state.smtpSentCounts[smtpID]++
@@ -243,10 +247,8 @@ func (w *DefaultWorker) processCampaigns(t time.Time) error {
 					}).Info("Sending email group to mailer")
 					w.mailer.Queue(group)
 
-					// Increment usage tracking
-					for i := int64(0); i < int64(len(group)); i++ {
-						models.IncrementSMTPUsage(smtpID)
-					}
+					// Batch increment usage tracking
+					models.BatchIncrementSMTPUsage(smtpID, int64(len(group)))
 
 					// Apply delay between SMTP groups if configured
 					if dc.DelayBetweenMs > 0 {
@@ -260,11 +262,9 @@ func (w *DefaultWorker) processCampaigns(t time.Time) error {
 				}).Info("Sending emails to mailer for processing")
 				w.mailer.Queue(msc)
 
-				// Increment usage for the single SMTP
+				// Batch increment usage for the single SMTP
 				if len(campaignSMTPs) == 1 {
-					for i := int64(0); i < int64(len(msc)); i++ {
-						models.IncrementSMTPUsage(campaignSMTPs[0].SMTPId)
-					}
+					models.BatchIncrementSMTPUsage(campaignSMTPs[0].SMTPID, int64(len(msc)))
 				}
 			}
 		}(cid, msc)
@@ -275,7 +275,7 @@ func (w *DefaultWorker) processCampaigns(t time.Time) error {
 // getSMTPConfig finds the SMTP config from campaignSMTPs by SMTP ID
 func getSMTPConfig(campaignSMTPs []models.CampaignSMTP, smtpID int64) *models.SMTP {
 	for i := range campaignSMTPs {
-		if campaignSMTPs[i].SMTPId == smtpID {
+		if campaignSMTPs[i].SMTPID == smtpID {
 			return &campaignSMTPs[i].SMTP
 		}
 	}
@@ -286,7 +286,9 @@ func getSMTPConfig(campaignSMTPs []models.CampaignSMTP, smtpID int64) *models.SM
 // that need to be processed.
 func (w *DefaultWorker) Start() {
 	log.Info("Background Worker Started Successfully - Waiting for Campaigns")
-	go w.mailer.Start(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go w.mailer.Start(ctx)
 	for t := range time.Tick(1 * time.Minute) {
 		err := w.processCampaigns(t)
 		if err != nil {
@@ -358,10 +360,8 @@ func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
 			}).Info("Queuing email group for campaign launch")
 			w.mailer.Queue(group)
 
-			// Increment usage tracking
-			for i := int64(0); i < int64(len(group)); i++ {
-				models.IncrementSMTPUsage(smtpID)
-			}
+			// Batch increment usage tracking
+			models.BatchIncrementSMTPUsage(smtpID, int64(len(group)))
 
 			// Apply delay between SMTP groups if configured
 			if dc.DelayBetweenMs > 0 {
@@ -372,11 +372,9 @@ func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
 		// Legacy single-SMTP mode
 		w.mailer.Queue(mailEntries)
 
-		// Increment usage for the single SMTP
+		// Batch increment usage for the single SMTP
 		if len(campaignSMTPs) == 1 {
-			for i := int64(0); i < int64(len(mailEntries)); i++ {
-				models.IncrementSMTPUsage(campaignSMTPs[0].SMTPId)
-			}
+			models.BatchIncrementSMTPUsage(campaignSMTPs[0].SMTPID, int64(len(mailEntries)))
 		}
 	}
 }

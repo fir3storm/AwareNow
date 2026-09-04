@@ -510,18 +510,19 @@ func generateRecommendations(clickRate, submitRate, reportRate float64) []string
 	return recommendations
 }
 
+// AnalyticsExportData represents the complete analytics data structure for export.
+type AnalyticsExportData struct {
+	Overview    AnalyticsOverview  `json:"overview"`
+	Timeline    []TimelineData     `json:"timeline"`
+	Departments []DepartmentStats  `json:"departments"`
+	Trends      []TrendData        `json:"trends"`
+	RiskScore   RiskScoreBreakdown `json:"risk_score"`
+}
+
 // ExportAnalyticsData returns all analytics data for export in the specified format.
 func ExportAnalyticsData(uid int64, format string) (interface{}, error) {
 	// Gather all analytics data for export
-	type ExportData struct {
-		Overview    AnalyticsOverview  `json:"overview"`
-		Timeline    []TimelineData     `json:"timeline"`
-		Departments []DepartmentStats  `json:"departments"`
-		Trends      []TrendData        `json:"trends"`
-		RiskScore   RiskScoreBreakdown `json:"risk_score"`
-	}
-
-	data := ExportData{}
+	data := AnalyticsExportData{}
 
 	// Get overview
 	overview, err := GetAnalyticsOverview(uid)

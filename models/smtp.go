@@ -309,7 +309,7 @@ func PutSMTP(s *SMTP) error {
 		log.Error(err)
 		return err
 	}
-	err = db.Where("id=?", s.Id).Save(s).Error
+	err = db.Where("id=? AND user_id=?", s.Id, s.UserId).Save(s).Error
 	if err != nil {
 		log.Error(err)
 	}
@@ -381,6 +381,37 @@ func IncrementSMTPUsage(smtpId int64) error {
 	}
 	// Increment existing record
 	usage.SentCount++
+	usage.LastSentAt = now
+	return db.Save(&usage).Error
+}
+
+// BatchIncrementSMTPUsage increments the sent count for an SMTP profile by a batch amount
+func BatchIncrementSMTPUsage(smtpId int64, count int64) error {
+	if count <= 0 {
+		return nil
+	}
+	now := time.Now().UTC()
+	hourKey := now.Format("2006-01-02-15")
+
+	// Try to find existing record for this hour
+	var usage SMTPUsage
+	err := db.Where("smtp_id = ? AND hour_key = ?", smtpId, hourKey).First(&usage).Error
+	if err == gorm.ErrRecordNotFound {
+		// Create new record
+		usage = SMTPUsage{
+			SMTPId:     smtpId,
+			HourKey:    hourKey,
+			SentCount:  count,
+			LastSentAt: now,
+		}
+		return db.Save(&usage).Error
+	}
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	// Increment existing record by batch count
+	usage.SentCount += count
 	usage.LastSentAt = now
 	return db.Save(&usage).Error
 }

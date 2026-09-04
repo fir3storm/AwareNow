@@ -28,6 +28,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -36,6 +37,12 @@ import (
 	log "github.com/fir3storm/AwareNow/logger"
 	"github.com/fir3storm/AwareNow/models"
 )
+
+// MaxBatchSize is the maximum number of events allowed in a single batch
+const MaxBatchSize = 1000
+
+// MaxEventDataSize is the maximum size in bytes for event data
+const MaxEventDataSize = 10240 // 10KB
 
 // BehaviorEventPayload represents a single behavior event sent from the
 // client-side tracking script. Each event captures a specific user action
@@ -104,6 +111,12 @@ func (as *Server) createBehaviorEvents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate batch size
+	if len(batch.Events) > MaxBatchSize {
+		JSONResponse(w, models.Response{Success: false, Message: fmt.Sprintf("Batch size exceeds maximum of %d events", MaxBatchSize)}, http.StatusBadRequest)
+		return
+	}
+
 	// Verify the result exists and belongs to the user
 	rs, err := models.GetResult(batch.Rid)
 	if err != nil {
@@ -136,10 +149,14 @@ func (as *Server) createBehaviorEvents(w http.ResponseWriter, r *http.Request) {
 			},
 		}
 
-		// Store event data
+		// Store event data (with size validation)
 		if event.Data != nil {
 			dataJSON, err := json.Marshal(event.Data)
 			if err == nil {
+				if len(dataJSON) > MaxEventDataSize {
+					log.Warnf("Event data size %d exceeds maximum %d for event type %s", len(dataJSON), MaxEventDataSize, event.Type)
+					continue
+				}
 				details.Browser["event_data"] = string(dataJSON)
 			}
 		}

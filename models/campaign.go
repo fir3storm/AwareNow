@@ -307,15 +307,15 @@ func getCampaignStats(cid int64) (CampaignStats, error) {
 	if err != nil {
 		return s, err
 	}
-	query.Where("status=?", EventDataSubmit).Count(&s.SubmittedData)
+	err = query.Where("status=?", EventDataSubmit).Count(&s.SubmittedData).Error
 	if err != nil {
 		return s, err
 	}
-	query.Where("status=?", EventClicked).Count(&s.ClickedLink)
+	err = query.Where("status=?", EventClicked).Count(&s.ClickedLink).Error
 	if err != nil {
 		return s, err
 	}
-	query.Where("reported=?", true).Count(&s.EmailReported)
+	err = query.Where("reported=?", true).Count(&s.EmailReported).Error
 	if err != nil {
 		return s, err
 	}
@@ -687,9 +687,19 @@ func GetCampaignSMTPsByCampaignID(campaignID int64) ([]CampaignSMTP, error) {
 		log.Error(err)
 		return cs, err
 	}
+
+	// Get the campaign to find the user ID for SMTP lookup
+	campaign := Campaign{}
+	err = db.Where("id = ?", campaignID).Select("user_id").Find(&campaign).Error
+	if err != nil {
+		log.Error(err)
+		return cs, err
+	}
+	uid := campaign.UserId
+
 	// Load the associated SMTP profiles
 	for i := range cs {
-		s, err := GetSMTP(cs[i].SMTPID, 0)
+		s, err := GetSMTP(cs[i].SMTPID, uid)
 		if err != nil {
 			log.Warnf("SMTP %d not found for campaign %d: %v", cs[i].SMTPID, campaignID, err)
 			continue
@@ -777,6 +787,24 @@ func DeleteCampaign(id int64) error {
 	}
 	// Delete campaign-SMTP associations
 	err = DeleteCampaignSMTPsByCampaign(id)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	// Delete device fingerprints associated with this campaign
+	err = DeleteDeviceFingerprintsByCampaign(id)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	// Delete behavior events associated with this campaign
+	err = DeleteBehaviorEventsByCampaign(id)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	// Delete sessions associated with this campaign
+	err = DeleteSessionsByCampaign(id)
 	if err != nil {
 		log.Error(err)
 		return err

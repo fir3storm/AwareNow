@@ -24,7 +24,7 @@ var ErrCampaignSMTPNotFound = errors.New("campaign SMTP association not found")
 
 // AddSMTPToCampaign adds a sending profile to a campaign.
 // It creates a new campaign_smtps record if one doesn't already exist.
-func AddSMTPToCampaign(campaignID, smtpID uint) error {
+func AddSMTPToCampaign(campaignID, smtpID int64) error {
 	existing := CampaignSMTP{}
 	err := db.Where("campaign_id = ? AND smtp_id = ?", campaignID, smtpID).First(&existing).Error
 	if err == nil {
@@ -37,8 +37,8 @@ func AddSMTPToCampaign(campaignID, smtpID uint) error {
 	}
 
 	cs := CampaignSMTP{
-		CampaignID: int64(campaignID),
-		SMTPID:     int64(smtpID),
+		CampaignID: campaignID,
+		SMTPID:     smtpID,
 		EmailsSent: 0,
 		CreatedAt:  time.Now().UTC(),
 	}
@@ -51,7 +51,7 @@ func AddSMTPToCampaign(campaignID, smtpID uint) error {
 }
 
 // RemoveSMTPFromCampaign removes a sending profile from a campaign.
-func RemoveSMTPFromCampaign(campaignID, smtpID uint) error {
+func RemoveSMTPFromCampaign(campaignID, smtpID int64) error {
 	err := db.Where("campaign_id = ? AND smtp_id = ?", campaignID, smtpID).Delete(&CampaignSMTP{}).Error
 	if err != nil {
 		log.Errorf("error removing SMTP from campaign: %v", err)
@@ -60,34 +60,31 @@ func RemoveSMTPFromCampaign(campaignID, smtpID uint) error {
 	return nil
 }
 
-// GetCampaignSMTPs returns all SMTP profiles associated with a campaign.
-func GetCampaignSMTPs(campaignID uint) ([]SMTP, error) {
-	smtps := []SMTP{}
-	err := db.Table("smtp").
-		Select("smtp.*").
-		Joins("INNER JOIN campaign_smtps ON campaign_smtps.smtp_id = smtp.id").
-		Where("campaign_smtps.campaign_id = ?", campaignID).
-		Find(&smtps).Error
+// GetCampaignSMTPs returns all CampaignSMTP relationships for a campaign.
+func GetCampaignSMTPs(campaignID int64) ([]CampaignSMTP, error) {
+	cs := []CampaignSMTP{}
+	err := db.Where("campaign_id = ?", campaignID).Find(&cs).Error
 	if err != nil {
 		log.Errorf("error getting campaign SMTPs: %v", err)
-		return smtps, err
+		return cs, err
 	}
 
-	// Load headers for each SMTP
-	for i := range smtps {
-		hErr := db.Where("smtp_id=?", smtps[i].Id).Find(&smtps[i].Headers).Error
-		if hErr != nil && hErr != gorm.ErrRecordNotFound {
-			log.Errorf("error loading headers for SMTP %d: %v", smtps[i].Id, hErr)
-			return smtps, hErr
+	// Load the associated SMTP profiles
+	for i := range cs {
+		s, err := GetSMTP(cs[i].SMTPID, 0)
+		if err != nil {
+			log.Warnf("SMTP %d not found for campaign %d: %v", cs[i].SMTPID, campaignID, err)
+			continue
 		}
+		cs[i].SMTP = s
 	}
 
-	return smtps, nil
+	return cs, nil
 }
 
 // IncrementSMTPUsage increments the email sent counter for a specific
 // campaign-SMTP association.
-func IncrementSMTPUsage(campaignID, smtpID uint) error {
+func IncrementSMTPUsage(campaignID, smtpID int64) error {
 	err := db.Model(&CampaignSMTP{}).
 		Where("campaign_id = ? AND smtp_id = ?", campaignID, smtpID).
 		UpdateColumn("emails_sent", gorm.Expr("emails_sent + ?", 1)).Error
@@ -98,9 +95,9 @@ func IncrementSMTPUsage(campaignID, smtpID uint) error {
 	return nil
 }
 
-// GetSMTPUsage returns the usage tracking record for a specific
+// GetCampaignSMTPUsage returns the usage tracking record for a specific
 // campaign-SMTP association.
-func GetSMTPUsage(campaignID, smtpID uint) (*CampaignSMTP, error) {
+func GetCampaignSMTPUsage(campaignID, smtpID int64) (*CampaignSMTP, error) {
 	cs := &CampaignSMTP{}
 	err := db.Where("campaign_id = ? AND smtp_id = ?", campaignID, smtpID).First(cs).Error
 	if err != nil {

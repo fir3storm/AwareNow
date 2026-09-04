@@ -43,6 +43,7 @@ type BehaviorEvent struct {
 // recipient, aggregating behavior events and device information.
 type Session struct {
 	ID                int64     `json:"id"`
+	SessionID         string    `json:"session_id" gorm:"column:session_id"`
 	RId               string    `json:"r_id"`
 	CampaignID        int64     `json:"campaign_id"`
 	StartedAt         time.Time `json:"started_at"`
@@ -274,7 +275,7 @@ func GetSessionByID(id int64) (Session, error) {
 // GetSessionBySessionID retrieves a session by its session identifier string
 func GetSessionBySessionID(sessionID string) (Session, error) {
 	s := Session{}
-	err := db.Where("id = ?", sessionID).First(&s).Error
+	err := db.Where("session_id = ?", sessionID).First(&s).Error
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			return s, ErrSessionNotFound
