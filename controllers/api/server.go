@@ -92,6 +92,18 @@ func (as *Server) registerRoutes() {
 	router.HandleFunc("/webhooks/", mid.Use(as.Webhooks, mid.RequirePermission(models.PermissionModifySystem)))
 	router.HandleFunc("/webhooks/{id:[0-9]+}/validate", mid.Use(as.ValidateWebhook, mid.RequirePermission(models.PermissionModifySystem)))
 	router.HandleFunc("/webhooks/{id:[0-9]+}", mid.Use(as.Webhook, mid.RequirePermission(models.PermissionModifySystem)))
+	// Analytics routes
+	router.HandleFunc("/analytics/overview", as.AnalyticsOverview).Methods("GET")
+	router.HandleFunc("/analytics/campaigns/{id:[0-9]+}/timeline", as.CampaignTimeline).Methods("GET")
+	router.HandleFunc("/analytics/timeline", as.OverallTimeline).Methods("GET")
+	router.HandleFunc("/analytics/departments", as.DepartmentStats).Methods("GET")
+	router.HandleFunc("/analytics/trends", as.Trends).Methods("GET")
+	router.HandleFunc("/analytics/risk-score", as.RiskScore).Methods("GET")
+	router.HandleFunc("/analytics/export", as.ExportAnalytics).Methods("GET")
+	// Tenant management routes (super admin only)
+	router.HandleFunc("/admin/tenants/", mid.Use(as.Tenants, mid.RequirePermission(models.PermissionModifySystem)))
+	router.HandleFunc("/admin/tenants/{id:[0-9]+}", mid.Use(as.Tenant, mid.RequirePermission(models.PermissionModifySystem)))
+	router.HandleFunc("/admin/tenants/{id:[0-9]+}/stats", mid.Use(as.TenantStats, mid.RequirePermission(models.PermissionModifySystem)))
 	as.handler = router
 }
 
