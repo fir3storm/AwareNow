@@ -11,27 +11,61 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// DeliveryConfig contains configuration options for how emails are sent
+// during a campaign, including timing, selection strategy, and retry behavior.
+type DeliveryConfig struct {
+	// DelayBetweenEmails is the delay in milliseconds between sending individual emails
+	DelayBetweenEmails int64 `json:"delay_between_ms"`
+	// SelectionStrategy determines how SMTP profiles are selected: "round_robin", "least_used", "random"
+	SelectionStrategy string `json:"selection_strategy"`
+	// MaxEmailsPerProfile limits how many emails a single SMTP profile can send (0 = unlimited)
+	MaxEmailsPerProfile int64 `json:"max_emails_per_profile"`
+	// RetryFailedProfiles indicates whether to retry sending with a different SMTP on failure
+	RetryFailedProfiles bool `json:"retry_failed_profiles"`
+}
+
 // Campaign is a struct representing a created campaign
 type Campaign struct {
-	Id            int64     `json:"id"`
-	UserId        int64     `json:"-"`
-	Name          string    `json:"name" sql:"not null"`
-	CreatedDate   time.Time `json:"created_date"`
-	LaunchDate    time.Time `json:"launch_date"`
-	SendByDate    time.Time `json:"send_by_date"`
-	CompletedDate time.Time `json:"completed_date"`
-	TemplateId    int64     `json:"-"`
-	Template      Template  `json:"template"`
-	PageId        int64     `json:"-"`
-	Page          Page      `json:"page"`
-	Status        string    `json:"status"`
-	Results       []Result  `json:"results,omitempty"`
-	Groups        []Group   `json:"groups,omitempty"`
-	Events        []Event   `json:"timeline,omitempty"`
-	SMTPId        int64     `json:"-"`
-	SMTP          SMTP      `json:"smtp"`
-	URL           string    `json:"url"`
+	Id            int64          `json:"id"`
+	UserId        int64          `json:"-"`
+	Name          string         `json:"name" sql:"not null"`
+	CreatedDate   time.Time      `json:"created_date"`
+	LaunchDate    time.Time      `json:"launch_date"`
+	SendByDate    time.Time      `json:"send_by_date"`
+	CompletedDate time.Time      `json:"completed_date"`
+	TemplateId    int64          `json:"-"`
+	Template      Template       `json:"template"`
+	PageId        int64          `json:"-"`
+	Page          Page           `json:"page"`
+	Status        string         `json:"status"`
+	Results       []Result       `json:"results,omitempty"`
+	Groups        []Group        `json:"groups,omitempty"`
+	Events        []Event        `json:"timeline,omitempty"`
+	SMTPId        int64          `json:"-"`
+	SMTP          SMTP           `json:"smtp"`
+	URL           string         `json:"url"`
+	// DeliveryConfig contains enhanced delivery settings for multi-SMTP campaigns
+	DeliveryConfig DeliveryConfig `json:"delivery_config"`
+	// SMTPIds is a list of SMTP IDs associated with this campaign (not persisted directly)
+	SMTPIds []int64 `json:"smtp_ids,omitempty" gorm:"-"`
+	// CampaignSMTPs is the list of campaign-to-SMTP associations (loaded separately)
+	CampaignSMTPs []CampaignSMTP `json:"campaign_smtps,omitempty" gorm:"-"`
 }
+
+// CampaignSMTPs is a list of CampaignSMTP relationships for multi-SMTP support
+type CampaignSMTPs []CampaignSMTP
+
+// SelectionStrategyRoundRobin distributes emails sequentially across SMTPs
+const SelectionStrategyRoundRobin = "round_robin"
+
+// SelectionStrategyRandom distributes emails randomly across SMTPs
+const SelectionStrategyRandom = "random"
+
+// SelectionStrategyLeastUsed distributes emails to the SMTP with lowest usage
+const SelectionStrategyLeastUsed = "least_used"
+
+// DefaultSelectionStrategy is used when no strategy is specified
+const DefaultSelectionStrategy = SelectionStrategyRoundRobin
 
 // CampaignResults is a struct representing the results from a campaign
 type CampaignResults struct {
@@ -226,6 +260,8 @@ func (c *Campaign) getDetails() error {
 		log.Warn(err)
 		return err
 	}
+	// Load multi-SMTP relationships
+	LoadCampaignSMTPs(c)
 	return nil
 }
 
@@ -449,6 +485,7 @@ func GetQueuedCampaigns(t time.Time) ([]Campaign, error) {
 }
 
 // PostCampaign inserts a campaign and all associated records into the database.
+// It supports both single SMTP (legacy) and multiple SMTPs (enhanced delivery).
 func PostCampaign(c *Campaign, uid int64) error {
 	err := c.Validate()
 	if err != nil {
@@ -532,6 +569,39 @@ func PostCampaign(c *Campaign, uid int64) error {
 		log.Error(err)
 		return err
 	}
+	// Handle multiple SMTP IDs if provided (enhanced delivery)
+	if len(c.SMTPIds) > 0 {
+		for _, smtpID := range c.SMTPIds {
+			cs := &CampaignSMTP{
+				CampaignID: c.Id,
+				SMTPID:     smtpID,
+				EmailsSent: 0,
+				CreatedAt:  time.Now().UTC(),
+			}
+			err = PostCampaignSMTP(cs)
+			if err != nil {
+				log.WithFields(logrus.Fields{
+					"smtp_id": smtpID,
+				}).Errorf("error creating campaign SMTP association: %v", err)
+				return err
+			}
+		}
+	} else {
+		// Backward compatibility: create a campaign_smtps entry for the single SMTP
+		cs := &CampaignSMTP{
+			CampaignID: c.Id,
+			SMTPID:     s.Id,
+			EmailsSent: 0,
+			CreatedAt:  time.Now().UTC(),
+		}
+		err = PostCampaignSMTP(cs)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"smtp_id": s.Id,
+			}).Errorf("error creating campaign SMTP association: %v", err)
+			return err
+		}
+	}
 	err = AddEvent(&Event{Message: "Campaign Created"}, c.Id)
 	if err != nil {
 		log.Error(err)
@@ -609,6 +679,81 @@ func PostCampaign(c *Campaign, uid int64) error {
 	return tx.Commit().Error
 }
 
+// GetCampaignSMTPsByCampaignID returns all CampaignSMTP relationships for a given campaign
+func GetCampaignSMTPsByCampaignID(campaignID int64) ([]CampaignSMTP, error) {
+	cs := []CampaignSMTP{}
+	err := db.Where("campaign_id = ?", campaignID).Find(&cs).Error
+	if err != nil {
+		log.Error(err)
+		return cs, err
+	}
+	// Load the associated SMTP profiles
+	for i := range cs {
+		s, err := GetSMTP(cs[i].SMTPID, 0)
+		if err != nil {
+			log.Warnf("SMTP %d not found for campaign %d: %v", cs[i].SMTPID, campaignID, err)
+			continue
+		}
+		cs[i].SMTP = s
+	}
+	return cs, nil
+}
+
+// PostCampaignSMTP creates a CampaignSMTP relationship in the database
+func PostCampaignSMTP(cs *CampaignSMTP) error {
+	cs.CreatedAt = time.Now().UTC()
+	err := db.Save(cs).Error
+	if err != nil {
+		log.Error(err)
+	}
+	return err
+}
+
+// DeleteCampaignSMTPsByCampaign deletes all CampaignSMTP relationships for a campaign
+func DeleteCampaignSMTPsByCampaign(campaignID int64) error {
+	err := db.Where("campaign_id = ?", campaignID).Delete(&CampaignSMTP{}).Error
+	if err != nil {
+		log.Error(err)
+	}
+	return err
+}
+
+// IncrementCampaignSMTPEmailsSent increments the emails_sent count for a CampaignSMTP
+func IncrementCampaignSMTPEmailsSent(campaignID int64, smtpID int64) error {
+	return db.Model(&CampaignSMTP{}).Where("campaign_id = ? AND smtp_id = ?", campaignID, smtpID).
+		UpdateColumn("emails_sent", gorm.Expr("emails_sent + ?", 1)).Error
+}
+
+// UpdateDeliveryConfig updates the campaign's delivery config fields
+func UpdateDeliveryConfig(campaignID int64, dc DeliveryConfig) error {
+	return db.Model(&Campaign{}).Where("id = ?", campaignID).Updates(map[string]interface{}{
+		"delay_between_ms":       dc.DelayBetweenEmails,
+		"selection_strategy":     dc.SelectionStrategy,
+		"max_emails_per_profile": dc.MaxEmailsPerProfile,
+		"retry_failed_profiles":  dc.RetryFailedProfiles,
+	}).Error
+}
+
+// LoadCampaignSMTPs loads the CampaignSMTP relationships into a campaign object
+func LoadCampaignSMTPs(c *Campaign) error {
+	cs, err := GetCampaignSMTPsByCampaignID(c.Id)
+	if err != nil {
+		return err
+	}
+	c.CampaignSMTPs = cs
+	// Populate the legacy SMTP fields from the first CampaignSMTP if available
+	if len(cs) > 0 && c.SMTPId == 0 {
+		c.SMTPId = cs[0].SMTPID
+		c.SMTP = cs[0].SMTP
+	}
+	// Populate SMTPIds for JSON response
+	c.SMTPIds = make([]int64, 0, len(cs))
+	for _, entry := range cs {
+		c.SMTPIds = append(c.SMTPIds, entry.SMTPID)
+	}
+	return nil
+}
+
 // DeleteCampaign deletes the specified campaign
 func DeleteCampaign(id int64) error {
 	log.WithFields(logrus.Fields{
@@ -626,6 +771,12 @@ func DeleteCampaign(id int64) error {
 		return err
 	}
 	err = db.Where("campaign_id=?", id).Delete(&MailLog{}).Error
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	// Delete campaign-SMTP associations
+	err = DeleteCampaignSMTPsByCampaign(id)
 	if err != nil {
 		log.Error(err)
 		return err

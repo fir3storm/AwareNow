@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/textproto"
+	"time"
 
 	"github.com/gophish/gomail"
 	log "github.com/fir3storm/AwareNow/logger"
@@ -62,14 +63,31 @@ type Mail interface {
 // on a channel to send. It's assumed that every slice of emails received is meant
 // to be sent to the same server.
 type MailWorker struct {
-	queue chan []Mail
+	queue        chan []Mail
+	batchQueue   chan *BatchMail
+	rateLimiter  *RateLimiter
+	sendDelay    time.Duration
 }
 
 // NewMailWorker returns an instance of MailWorker with the mail queue
 // initialized.
 func NewMailWorker() *MailWorker {
 	return &MailWorker{
-		queue: make(chan []Mail),
+		queue:      make(chan []Mail),
+		batchQueue: make(chan *BatchMail, 100),
+		rateLimiter: NewRateLimiter(),
+		sendDelay:  0,
+	}
+}
+
+// NewMailWorkerWithRateLimiter returns an instance of MailWorker with a
+// custom rate limiter and optional delay between individual emails.
+func NewMailWorkerWithRateLimiter(rl *RateLimiter, sendDelay time.Duration) *MailWorker {
+	return &MailWorker{
+		queue:       make(chan []Mail),
+		batchQueue:  make(chan *BatchMail, 100),
+		rateLimiter: rl,
+		sendDelay:   sendDelay,
 	}
 }
 
@@ -87,8 +105,17 @@ func (mw *MailWorker) Start(ctx context.Context) {
 					errorMail(err, ms)
 					return
 				}
-				sendMail(ctx, dialer, ms)
+				sendMailWithDelay(ctx, dialer, ms, mw.sendDelay)
 			}(ctx, ms)
+		case batch := <-mw.batchQueue:
+			go func(ctx context.Context, batch *BatchMail) {
+				dialer, err := batch.Mails[0].GetDialer()
+				if err != nil {
+					errorMail(err, batch.Mails)
+					return
+				}
+				sendBatchMail(ctx, dialer, batch, mw.rateLimiter)
+			}(ctx, batch)
 		}
 	}
 }
@@ -96,6 +123,17 @@ func (mw *MailWorker) Start(ctx context.Context) {
 // Queue sends the provided mail to the internal queue for processing.
 func (mw *MailWorker) Queue(ms []Mail) {
 	mw.queue <- ms
+}
+
+// QueueBatch sends a BatchMail to the internal batch queue for processing
+// with rate limiting support.
+func (mw *MailWorker) QueueBatch(batch *BatchMail) {
+	mw.batchQueue <- batch
+}
+
+// GetRateLimiter returns the MailWorker's rate limiter for profile registration.
+func (mw *MailWorker) GetRateLimiter() *RateLimiter {
+	return mw.rateLimiter
 }
 
 // errorMail is a helper to handle erroring out a slice of Mail instances
@@ -139,6 +177,13 @@ func dialHost(ctx context.Context, dialer Dialer) (Sender, error) {
 // If the context is cancelled before all of the mail are sent,
 // sendMail just returns and does not modify those emails.
 func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
+	sendMailWithDelay(ctx, dialer, ms, 0)
+}
+
+// sendMailWithDelay attempts to send the provided Mail instances with an optional
+// delay between each email. If the context is cancelled before all of the mail
+// are sent, sendMailWithDelay just returns and does not modify those emails.
+func sendMailWithDelay(ctx context.Context, dialer Dialer, ms []Mail, delay time.Duration) {
 	sender, err := dialHost(ctx, dialer)
 	if err != nil {
 		log.Warn(err)
@@ -154,6 +199,16 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 		default:
 			break
 		}
+
+		// Apply delay between emails (but not before the first one).
+		if delay > 0 && i > 0 {
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(delay):
+			}
+		}
+
 		message.Reset()
 		err = m.Generate(message)
 		if err != nil {
@@ -227,6 +282,105 @@ func sendMail(ctx context.Context, dialer Dialer, ms []Mail) {
 			"envelope_from": message.GetHeader("From")[0],
 			"email":         message.GetHeader("To")[0],
 		}).Info("Email sent")
+		m.Success()
+	}
+}
+
+// sendBatchMail sends a BatchMail using the provided rate limiter to control
+// per-SMTP-profile send rates. Each email in the batch is gated by the rate
+// limiter's WaitForSend call.
+func sendBatchMail(ctx context.Context, dialer Dialer, batch *BatchMail, rl *RateLimiter) {
+	sender, err := dialHost(ctx, dialer)
+	if err != nil {
+		log.Warn(err)
+		errorMail(err, batch.Mails)
+		return
+	}
+	defer sender.Close()
+	message := gomail.NewMessage()
+	for i, m := range batch.Mails {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			break
+		}
+
+		// Wait for rate limiter clearance before sending.
+		err := rl.WaitForSend(batch.SMTPID)
+		if err != nil {
+			log.WithFields(logrus.Fields{
+				"smtp_id":     batch.SMTPID,
+				"campaign_id": batch.CampaignID,
+			}).Warn(err)
+			m.Backoff(err)
+			continue
+		}
+
+		message.Reset()
+		err = m.Generate(message)
+		if err != nil {
+			log.Warn(err)
+			m.Error(err)
+			continue
+		}
+
+		smtp_from, err := m.GetSmtpFrom()
+		if err != nil {
+			m.Error(err)
+			continue
+		}
+
+		err = gomail.SendCustomFrom(sender, smtp_from, message)
+		if err != nil {
+			if te, ok := err.(*textproto.Error); ok {
+				switch {
+				case te.Code >= 400 && te.Code <= 499:
+					log.WithFields(logrus.Fields{
+						"code":  te.Code,
+						"email": message.GetHeader("To")[0],
+					}).Warn(err)
+					m.Backoff(err)
+					sender.Reset()
+					continue
+				case te.Code >= 500 && te.Code <= 599:
+					log.WithFields(logrus.Fields{
+						"code":  te.Code,
+						"email": message.GetHeader("To")[0],
+					}).Warn(err)
+					m.Error(err)
+					sender.Reset()
+					continue
+				default:
+					log.WithFields(logrus.Fields{
+						"code":  "unknown",
+						"email": message.GetHeader("To")[0],
+					}).Warn(err)
+					m.Error(err)
+					sender.Reset()
+					continue
+				}
+			} else {
+				log.WithFields(logrus.Fields{
+					"email": message.GetHeader("To")[0],
+				}).Warn(err)
+				origErr := err
+				sender, err = dialHost(ctx, dialer)
+				if err != nil {
+					errorMail(err, batch.Mails[i:])
+					break
+				}
+				m.Backoff(origErr)
+				continue
+			}
+		}
+		log.WithFields(logrus.Fields{
+			"smtp_id":       batch.SMTPID,
+			"campaign_id":   batch.CampaignID,
+			"smtp_from":     smtp_from,
+			"envelope_from": message.GetHeader("From")[0],
+			"email":         message.GetHeader("To")[0],
+		}).Info("Batch email sent")
 		m.Success()
 	}
 }

@@ -32,17 +32,39 @@ func (d *Dialer) Dial() (mailer.Sender, error) {
 
 // SMTP contains the attributes needed to handle the sending of campaign emails
 type SMTP struct {
-	Id               int64     `json:"id" gorm:"column:id; primary_key:yes"`
-	UserId           int64     `json:"-" gorm:"column:user_id"`
-	Interface        string    `json:"interface_type" gorm:"column:interface_type"`
-	Name             string    `json:"name"`
-	Host             string    `json:"host"`
-	Username         string    `json:"username,omitempty"`
-	Password         string    `json:"password,omitempty"`
-	FromAddress      string    `json:"from_address"`
-	IgnoreCertErrors bool      `json:"ignore_cert_errors"`
-	Headers          []Header  `json:"headers"`
-	ModifiedDate     time.Time `json:"modified_date"`
+	Id                int64     `json:"id" gorm:"column:id; primary_key:yes"`
+	UserId            int64     `json:"-" gorm:"column:user_id"`
+	Interface         string    `json:"interface_type" gorm:"column:interface_type"`
+	Name              string    `json:"name"`
+	Host              string    `json:"host"`
+	Username          string    `json:"username,omitempty"`
+	Password          string    `json:"password,omitempty"`
+	FromAddress       string    `json:"from_address"`
+	IgnoreCertErrors  bool      `json:"ignore_cert_errors"`
+	Headers           []Header  `json:"headers"`
+	ModifiedDate      time.Time `json:"modified_date"`
+	// MaxEmailsPerHour limits the number of emails this SMTP can send per hour (0 = unlimited)
+	MaxEmailsPerHour int64     `json:"max_emails_per_hour" gorm:"column:max_emails_per_hour; default:0"`
+	// CurrentHourCount tracks the number of emails sent in the current hour
+	CurrentHourCount int64     `json:"-" gorm:"column:current_hour_count; default:0"`
+	// HourResetTime is when the current hour counter was last reset
+	HourResetTime    time.Time `json:"-" gorm:"column:hour_reset_time"`
+}
+
+// SMTPUsage represents the current hour's sending count for an SMTP profile
+type SMTPUsage struct {
+	SMTPId       int64     `json:"smtp_id" gorm:"column:smtp_id"`
+	HourKey      string    `json:"hour_key" gorm:"column:hour_key"`
+	SentCount    int64     `json:"sent_count" gorm:"column:sent_count"`
+	LastSentAt   time.Time `json:"last_sent_at" gorm:"column:last_sent_at"`
+}
+
+// SMTPUsageInfo returns the current hour usage info for an SMTP profile
+type SMTPUsageInfo struct {
+	SMTPId          int64     `json:"smtp_id"`
+	CurrentHourCount int64   `json:"current_hour_count"`
+	MaxPerHour      int64     `json:"max_per_hour"`
+	ResetTime       time.Time `json:"reset_time"`
 }
 
 // Header contains the fields and methods for a sending profile to have
@@ -136,6 +158,74 @@ func (s *SMTP) GetDialer() (mailer.Dialer, error) {
 	}
 	d.LocalName = hostname
 	return &Dialer{d}, err
+}
+
+// IsRateLimited checks whether the SMTP profile has exceeded its hourly sending limit.
+// Returns false if no limit is set (MaxEmailsPerHour <= 0).
+func (s *SMTP) IsRateLimited() bool {
+	if s.MaxEmailsPerHour <= 0 {
+		return false
+	}
+	// Reset the counter if the hour has passed
+	now := time.Now().UTC()
+	if !s.HourResetTime.IsZero() && now.Sub(s.HourResetTime) >= time.Hour {
+		s.CurrentHourCount = 0
+		s.HourResetTime = now
+	}
+	return s.CurrentHourCount >= s.MaxEmailsPerHour
+}
+
+// IncrementHourCount increments the current hour sending count and updates
+// the reset time if this is the first email in a new hour.
+func (s *SMTP) IncrementHourCount() error {
+	now := time.Now().UTC()
+	// Reset counter if hour has changed
+	if s.HourResetTime.IsZero() || now.Sub(s.HourResetTime) >= time.Hour {
+		s.CurrentHourCount = 0
+		s.HourResetTime = now
+	}
+	s.CurrentHourCount++
+	// Persist to database
+	err := db.Model(&SMTP{}).Where("id = ?", s.Id).Updates(map[string]interface{}{
+		"current_hour_count": s.CurrentHourCount,
+		"hour_reset_time":    s.HourResetTime,
+	}).Error
+	if err != nil {
+		log.Errorf("error updating SMTP hour count for %d: %v", s.Id, err)
+	}
+	return err
+}
+
+// ResetHourCount manually resets the hourly sending counter.
+func (s *SMTP) ResetHourCount() error {
+	s.CurrentHourCount = 0
+	s.HourResetTime = time.Now().UTC()
+	err := db.Model(&SMTP{}).Where("id = ?", s.Id).Updates(map[string]interface{}{
+		"current_hour_count": 0,
+		"hour_reset_time":    s.HourResetTime,
+	}).Error
+	if err != nil {
+		log.Errorf("error resetting SMTP hour count for %d: %v", s.Id, err)
+	}
+	return err
+}
+
+// GetRemainingHourQuota returns the number of emails that can still be sent
+// this hour before hitting the limit. Returns -1 if no limit is set.
+func (s *SMTP) GetRemainingHourQuota() int64 {
+	if s.MaxEmailsPerHour <= 0 {
+		return -1
+	}
+	// Reset the counter if the hour has passed
+	now := time.Now().UTC()
+	if !s.HourResetTime.IsZero() && now.Sub(s.HourResetTime) >= time.Hour {
+		return s.MaxEmailsPerHour
+	}
+	remaining := s.MaxEmailsPerHour - s.CurrentHourCount
+	if remaining < 0 {
+		return 0
+	}
+	return remaining
 }
 
 // GetSMTPs returns the SMTPs owned by the given user.
@@ -239,6 +329,74 @@ func PutSMTP(s *SMTP) error {
 		}
 	}
 	return err
+}
+
+// GetSMTPUsage returns the current hour's sending count and limits for an SMTP profile
+func GetSMTPUsage(smtpId int64, maxPerHour int64) (SMTPUsageInfo, error) {
+	info := SMTPUsageInfo{
+		SMTPId:     smtpId,
+		MaxPerHour: maxPerHour,
+	}
+	now := time.Now().UTC()
+	hourKey := now.Format("2006-01-02-15")
+	resetTime := now.Truncate(time.Hour).Add(time.Hour)
+
+	var usage SMTPUsage
+	err := db.Where("smtp_id = ? AND hour_key = ?", smtpId, hourKey).First(&usage).Error
+	if err == gorm.ErrRecordNotFound {
+		info.CurrentHourCount = 0
+		info.ResetTime = resetTime
+		return info, nil
+	}
+	if err != nil {
+		log.Error(err)
+		return info, err
+	}
+	info.CurrentHourCount = usage.SentCount
+	info.ResetTime = resetTime
+	return info, nil
+}
+
+// IncrementSMTPUsage increments the sent count for an SMTP profile in the current hour
+func IncrementSMTPUsage(smtpId int64) error {
+	now := time.Now().UTC()
+	hourKey := now.Format("2006-01-02-15")
+
+	// Try to find existing record for this hour
+	var usage SMTPUsage
+	err := db.Where("smtp_id = ? AND hour_key = ?", smtpId, hourKey).First(&usage).Error
+	if err == gorm.ErrRecordNotFound {
+		// Create new record
+		usage = SMTPUsage{
+			SMTPId:     smtpId,
+			HourKey:    hourKey,
+			SentCount:  1,
+			LastSentAt: now,
+		}
+		return db.Save(&usage).Error
+	}
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+	// Increment existing record
+	usage.SentCount++
+	usage.LastSentAt = now
+	return db.Save(&usage).Error
+}
+
+// CanSendFromSMTP checks if an SMTP profile has not exceeded its hourly limit
+func CanSendFromSMTP(smtpId int64, maxPerHour int64) bool {
+	if maxPerHour <= 0 {
+		// No limit set, always allow
+		return true
+	}
+	info, err := GetSMTPUsage(smtpId, maxPerHour)
+	if err != nil {
+		log.Warnf("Error checking SMTP usage for %d: %v", smtpId, err)
+		return true // Allow on error to avoid blocking
+	}
+	return info.CurrentHourCount < maxPerHour
 }
 
 // DeleteSMTP deletes an existing SMTP in the database.

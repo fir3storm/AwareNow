@@ -88,9 +88,46 @@ func (as *Server) SendingProfile(w http.ResponseWriter, r *http.Request) {
 		s.UserId = ctx.Get(r, "user_id").(int64)
 		err = models.PutSMTP(&s)
 		if err != nil {
-			JSONResponse(w, models.Response{Success: false, Message: "Error updating page"}, http.StatusInternalServerError)
+			JSONResponse(w, models.Response{Success: false, Message: "Error updating SMTP"}, http.StatusInternalServerError)
 			return
 		}
 		JSONResponse(w, s, http.StatusOK)
 	}
+}
+
+// SMTPUsage returns the current hour usage statistics for an SMTP profile
+func (as *Server) SMTPUsage(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		JSONResponse(w, models.Response{Success: false, Message: "Method not allowed"}, http.StatusBadRequest)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 0, 64)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Invalid SMTP ID"}, http.StatusBadRequest)
+		return
+	}
+
+	uid := ctx.Get(r, "user_id").(int64)
+
+	// Verify the SMTP exists and belongs to the user
+	s, err := models.GetSMTP(id, uid)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			JSONResponse(w, models.Response{Success: false, Message: "SMTP not found"}, http.StatusNotFound)
+			return
+		}
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	// Get current usage
+	usage, err := models.GetSMTPUsage(id, s.MaxEmailsPerHour)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	JSONResponse(w, usage, http.StatusOK)
 }

@@ -254,6 +254,8 @@ func Setup(c *config.Config) error {
 	// Auto-migrate enhanced tracking tables to ensure they exist
 	// even if goose migrations are not run (e.g., fresh GORM-based setups)
 	autoMigrateEnhancedTracking()
+	// Auto-migrate multi-SMTP tables
+	autoMigrateMultiSMTP()
 	return nil
 }
 
@@ -264,4 +266,13 @@ func autoMigrateEnhancedTracking() {
 	db.AutoMigrate(&DeviceFingerprint{})
 	db.AutoMigrate(&BehaviorEvent{})
 	db.AutoMigrate(&Session{})
+	db.AutoMigrate(&CampaignSMTP{})
+}
+
+// autoMigrateMultiSMTP ensures the multi-SMTP tables exist
+// in the database using GORM's AutoMigrate. This is a safety net alongside
+// the goose SQL migrations in db/migrations/004_multi_smtp.sql.
+func autoMigrateMultiSMTP() {
+	db.AutoMigrate(&CampaignSMTP{})
+	db.AutoMigrate(&SMTPUsage{})
 }
