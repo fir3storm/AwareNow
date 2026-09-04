@@ -6,9 +6,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gophish/gophish/config"
-	ctx "github.com/gophish/gophish/context"
-	"github.com/gophish/gophish/models"
+	"github.com/fir3storm/AwareNow/config"
+	ctx "github.com/fir3storm/AwareNow/context"
+	"github.com/fir3storm/AwareNow/models"
 )
 
 var successHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

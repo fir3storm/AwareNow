@@ -10,10 +10,10 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/gophish/gophish/dialer"
-	log "github.com/gophish/gophish/logger"
-	"github.com/gophish/gophish/models"
-	"github.com/gophish/gophish/util"
+	"github.com/fir3storm/AwareNow/dialer"
+	log "github.com/fir3storm/AwareNow/logger"
+	"github.com/fir3storm/AwareNow/models"
+	"github.com/fir3storm/AwareNow/util"
 	"github.com/jordan-wright/email"
 )
 

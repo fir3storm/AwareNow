@@ -3,9 +3,9 @@ package api
 import (
 	"net/http"
 
-	"github.com/gophish/gophish/auth"
-	ctx "github.com/gophish/gophish/context"
-	"github.com/gophish/gophish/models"
+	"github.com/fir3storm/AwareNow/auth"
+	ctx "github.com/fir3storm/AwareNow/context"
+	"github.com/fir3storm/AwareNow/models"
 )
 
 // Reset (/api/reset) resets the currently authenticated user's API key

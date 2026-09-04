@@ -3,7 +3,7 @@ package middleware
 import (
 	"encoding/gob"
 
-	"github.com/gophish/gophish/models"
+	"github.com/fir3storm/AwareNow/models"
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )

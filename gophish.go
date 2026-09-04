@@ -1,7 +1,7 @@
 package main
 
 /*
-gophish - Open-Source Phishing Framework
+awarenow - Open-Source Phishing Framework
 
 The MIT License (MIT)
 
@@ -34,14 +34,14 @@ import (
 
 	"gopkg.in/alecthomas/kingpin.v2"
 
-	"github.com/gophish/gophish/config"
-	"github.com/gophish/gophish/controllers"
-	"github.com/gophish/gophish/dialer"
-	"github.com/gophish/gophish/imap"
-	log "github.com/gophish/gophish/logger"
-	"github.com/gophish/gophish/middleware"
-	"github.com/gophish/gophish/models"
-	"github.com/gophish/gophish/webhook"
+	"github.com/fir3storm/AwareNow/config"
+	"github.com/fir3storm/AwareNow/controllers"
+	"github.com/fir3storm/AwareNow/dialer"
+	"github.com/fir3storm/AwareNow/imap"
+	log "github.com/fir3storm/AwareNow/logger"
+	"github.com/fir3storm/AwareNow/middleware"
+	"github.com/fir3storm/AwareNow/models"
+	"github.com/fir3storm/AwareNow/webhook"
 )
 
 const (
@@ -102,7 +102,7 @@ func main() {
 	}
 
 	// Unlock any maillogs that may have been locked for processing
-	// when Gophish was last shutdown.
+	// when AwareNow was last shutdown.
 	err = models.UnlockAllMailLogs()
 	if err != nil {
 		log.Fatal(err)

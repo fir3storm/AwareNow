@@ -1,4 +1,4 @@
-module github.com/gophish/gophish
+module github.com/fir3storm/AwareNow
 
 go 1.13
 
