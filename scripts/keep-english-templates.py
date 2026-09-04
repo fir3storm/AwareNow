@@ -2,7 +2,7 @@
 """Keep only English email templates and landing pages.
 
 Deletes HailBytes Spanish/Portuguese packs from this repo. With --gophish,
-also removes already-imported non-English records from the live Gophish API.
+also removes already-imported records identified by those retired packs.
 
   python3 scripts/keep-english-templates.py --dry-run
   python3 scripts/keep-english-templates.py
@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import re
 import shutil
 import sys
 import urllib.error
@@ -25,7 +24,6 @@ TEMPLATES = ROOT / "templates"
 HAILBYTES = TEMPLATES / "vendor" / "hailbytes"
 API = os.environ.get("GOPHISH_URL", "http://127.0.0.1:3333").rstrip("/")
 API_KEY = os.environ.get("GOPHISH_API_KEY", "").strip()
-LANG_RE = re.compile(r"<html[^>]*\blang=['\"]([^'\"]+)['\"]", re.I)
 
 
 def is_english_tag(tag: str | None) -> bool:
@@ -103,12 +101,7 @@ def delete_gophish(drop_names: set[str], dry_run: bool) -> int:
         records = api("GET", list_path) or []
         for rec in records:
             name = rec.get("name") or ""
-            html = rec.get("html") or ""
-            lang_m = LANG_RE.search(html)
-            lang = lang_m.group(1) if lang_m else None
-            by_name = name in drop_names or "latam-spanish" in name or "latam-portuguese" in name
-            by_lang = not is_english_tag(lang)
-            if not by_name and not by_lang:
+            if name not in drop_names:
                 continue
             rid = rec.get("id")
             print(f"{'would delete' if dry_run else 'delete'} {kind}  {name}")
@@ -138,6 +131,13 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if args.gophish and not API_KEY:
+        print(
+            "Set GOPHISH_API_KEY to clean the live Gophish lists.",
+            file=sys.stderr,
+        )
+        return 1
+
     dirs = hailbytes_non_english_dirs()
     drop_names: set[str] = set()
     for path in dirs:
@@ -153,12 +153,6 @@ def main() -> int:
 
     api_removed = 0
     if args.gophish:
-        if not API_KEY:
-            print(
-                "Set GOPHISH_API_KEY to clean the live Gophish lists.",
-                file=sys.stderr,
-            )
-            return 1
         api_removed = delete_gophish(drop_names, args.dry_run)
 
     print(
