@@ -7,8 +7,8 @@ import (
 	"net/textproto"
 	"time"
 
-	"github.com/gophish/gomail"
 	log "github.com/fir3storm/AwareNow/logger"
+	"github.com/gophish/gomail"
 	"github.com/sirupsen/logrus"
 )
 
@@ -63,20 +63,20 @@ type Mail interface {
 // on a channel to send. It's assumed that every slice of emails received is meant
 // to be sent to the same server.
 type MailWorker struct {
-	queue        chan []Mail
-	batchQueue   chan *BatchMail
-	rateLimiter  *RateLimiter
-	sendDelay    time.Duration
+	queue       chan []Mail
+	batchQueue  chan *BatchMail
+	rateLimiter *RateLimiter
+	sendDelay   time.Duration
 }
 
 // NewMailWorker returns an instance of MailWorker with the mail queue
 // initialized.
 func NewMailWorker() *MailWorker {
 	return &MailWorker{
-		queue:      make(chan []Mail),
-		batchQueue: make(chan *BatchMail, 100),
+		queue:       make(chan []Mail),
+		batchQueue:  make(chan *BatchMail, 100),
 		rateLimiter: NewRateLimiter(),
-		sendDelay:  0,
+		sendDelay:   0,
 	}
 }
 

@@ -42,15 +42,15 @@ type BehaviorEvent struct {
 // Session represents a single visit/engagement session by a campaign
 // recipient, aggregating behavior events and device information.
 type Session struct {
-	ID                 int64             `json:"id"`
-	RId                string            `json:"r_id"`
-	CampaignID         int64             `json:"campaign_id"`
-	StartedAt          time.Time         `json:"started_at"`
-	EndedAt            time.Time         `json:"ended_at"`
-	Duration           int               `json:"duration"`
-	PagesViewed        int               `json:"pages_viewed"`
-	EventsCount        int               `json:"events_count"`
-	DeviceFingerprint  string            `json:"device_fingerprint"`
+	ID                int64     `json:"id"`
+	RId               string    `json:"r_id"`
+	CampaignID        int64     `json:"campaign_id"`
+	StartedAt         time.Time `json:"started_at"`
+	EndedAt           time.Time `json:"ended_at"`
+	Duration          int       `json:"duration"`
+	PagesViewed       int       `json:"pages_viewed"`
+	EventsCount       int       `json:"events_count"`
+	DeviceFingerprint string    `json:"device_fingerprint"`
 }
 
 // ErrDeviceFingerprintNotFound indicates no fingerprint was found for the given criteria

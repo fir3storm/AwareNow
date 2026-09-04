@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gophish/gophish/auth"
-	"github.com/gophish/gophish/models"
+	"github.com/fir3storm/AwareNow/auth"
+	"github.com/fir3storm/AwareNow/models"
 )
 
 type loginRequest struct {
@@ -47,7 +47,7 @@ func (as *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.GenerateJWT(user)
+	token, err := auth.GenerateJWT(user.Id, user.Username, user.Role.Name)
 	if err != nil {
 		JSONResponse(w, Response{Success: false, Message: "Failed to generate token"}, http.StatusInternalServerError)
 		return

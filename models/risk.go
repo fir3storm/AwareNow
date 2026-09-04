@@ -239,7 +239,7 @@ func CalculateRiskFactors(r Result, events []BehaviorEvent) RiskFactors {
 				hoursAgo = 0
 			}
 			// Exponential decay: events from 30+ days ago have minimal weight
-			weight := 1.0 / (1.0+hoursAgo/168.0) // 168 hours = 1 week half-life
+			weight := 1.0 / (1.0 + hoursAgo/168.0) // 168 hours = 1 week half-life
 			weightedSum += weight
 		}
 		factors.RecencyFactor = weightedSum / float64(totalEvents)

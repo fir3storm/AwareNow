@@ -13,10 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gophish/gomail"
 	"github.com/fir3storm/AwareNow/config"
 	log "github.com/fir3storm/AwareNow/logger"
 	"github.com/fir3storm/AwareNow/mailer"
+	"github.com/gophish/gomail"
 )
 
 // MaxSendAttempts set to 8 since we exponentially backoff after each failed send

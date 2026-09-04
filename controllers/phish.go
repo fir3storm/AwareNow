@@ -228,21 +228,21 @@ func (ps *PhishingServer) TrackDetailsHandler(w http.ResponseWriter, r *http.Req
 
 	// Parse fingerprint data from request body
 	var fingerprint struct {
-		ScreenWidth    int    `json:"screen_width"`
-		ScreenHeight   int    `json:"screen_height"`
-		ColorDepth     int    `json:"color_depth"`
-		Timezone       string `json:"timezone"`
-		Language       string `json:"language"`
-		Platform       string `json:"platform"`
-		Concurrency    int    `json:"hardware_concurrency"`
-		DeviceMemory   int    `json:"device_memory"`
-		TouchSupport   bool   `json:"touch_support"`
-		WebGLVendor    string `json:"webgl_vendor"`
-		WebGLRenderer  string `json:"webgl_renderer"`
-		CanvasFP       string `json:"canvas_fingerprint"`
-		Fonts          string `json:"fonts"`
-		Plugins        string `json:"plugins"`
-		AudioFP        string `json:"audio_fingerprint"`
+		ScreenWidth   int    `json:"screen_width"`
+		ScreenHeight  int    `json:"screen_height"`
+		ColorDepth    int    `json:"color_depth"`
+		Timezone      string `json:"timezone"`
+		Language      string `json:"language"`
+		Platform      string `json:"platform"`
+		Concurrency   int    `json:"hardware_concurrency"`
+		DeviceMemory  int    `json:"device_memory"`
+		TouchSupport  bool   `json:"touch_support"`
+		WebGLVendor   string `json:"webgl_vendor"`
+		WebGLRenderer string `json:"webgl_renderer"`
+		CanvasFP      string `json:"canvas_fingerprint"`
+		Fonts         string `json:"fonts"`
+		Plugins       string `json:"plugins"`
+		AudioFP       string `json:"audio_fingerprint"`
 	}
 
 	if r.Method == "POST" && r.Body != nil {

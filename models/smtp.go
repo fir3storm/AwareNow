@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gophish/gomail"
 	"github.com/fir3storm/AwareNow/dialer"
 	log "github.com/fir3storm/AwareNow/logger"
 	"github.com/fir3storm/AwareNow/mailer"
+	"github.com/gophish/gomail"
 	"github.com/jinzhu/gorm"
 )
 
@@ -32,39 +32,39 @@ func (d *Dialer) Dial() (mailer.Sender, error) {
 
 // SMTP contains the attributes needed to handle the sending of campaign emails
 type SMTP struct {
-	Id                int64     `json:"id" gorm:"column:id; primary_key:yes"`
-	UserId            int64     `json:"-" gorm:"column:user_id"`
-	Interface         string    `json:"interface_type" gorm:"column:interface_type"`
-	Name              string    `json:"name"`
-	Host              string    `json:"host"`
-	Username          string    `json:"username,omitempty"`
-	Password          string    `json:"password,omitempty"`
-	FromAddress       string    `json:"from_address"`
-	IgnoreCertErrors  bool      `json:"ignore_cert_errors"`
-	Headers           []Header  `json:"headers"`
-	ModifiedDate      time.Time `json:"modified_date"`
+	Id               int64     `json:"id" gorm:"column:id; primary_key:yes"`
+	UserId           int64     `json:"-" gorm:"column:user_id"`
+	Interface        string    `json:"interface_type" gorm:"column:interface_type"`
+	Name             string    `json:"name"`
+	Host             string    `json:"host"`
+	Username         string    `json:"username,omitempty"`
+	Password         string    `json:"password,omitempty"`
+	FromAddress      string    `json:"from_address"`
+	IgnoreCertErrors bool      `json:"ignore_cert_errors"`
+	Headers          []Header  `json:"headers"`
+	ModifiedDate     time.Time `json:"modified_date"`
 	// MaxEmailsPerHour limits the number of emails this SMTP can send per hour (0 = unlimited)
-	MaxEmailsPerHour int64     `json:"max_emails_per_hour" gorm:"column:max_emails_per_hour; default:0"`
+	MaxEmailsPerHour int64 `json:"max_emails_per_hour" gorm:"column:max_emails_per_hour; default:0"`
 	// CurrentHourCount tracks the number of emails sent in the current hour
-	CurrentHourCount int64     `json:"-" gorm:"column:current_hour_count; default:0"`
+	CurrentHourCount int64 `json:"-" gorm:"column:current_hour_count; default:0"`
 	// HourResetTime is when the current hour counter was last reset
-	HourResetTime    time.Time `json:"-" gorm:"column:hour_reset_time"`
+	HourResetTime time.Time `json:"-" gorm:"column:hour_reset_time"`
 }
 
 // SMTPUsage represents the current hour's sending count for an SMTP profile
 type SMTPUsage struct {
-	SMTPId       int64     `json:"smtp_id" gorm:"column:smtp_id"`
-	HourKey      string    `json:"hour_key" gorm:"column:hour_key"`
-	SentCount    int64     `json:"sent_count" gorm:"column:sent_count"`
-	LastSentAt   time.Time `json:"last_sent_at" gorm:"column:last_sent_at"`
+	SMTPId     int64     `json:"smtp_id" gorm:"column:smtp_id"`
+	HourKey    string    `json:"hour_key" gorm:"column:hour_key"`
+	SentCount  int64     `json:"sent_count" gorm:"column:sent_count"`
+	LastSentAt time.Time `json:"last_sent_at" gorm:"column:last_sent_at"`
 }
 
 // SMTPUsageInfo returns the current hour usage info for an SMTP profile
 type SMTPUsageInfo struct {
-	SMTPId          int64     `json:"smtp_id"`
-	CurrentHourCount int64   `json:"current_hour_count"`
-	MaxPerHour      int64     `json:"max_per_hour"`
-	ResetTime       time.Time `json:"reset_time"`
+	SMTPId           int64     `json:"smtp_id"`
+	CurrentHourCount int64     `json:"current_hour_count"`
+	MaxPerHour       int64     `json:"max_per_hour"`
+	ResetTime        time.Time `json:"reset_time"`
 }
 
 // Header contains the fields and methods for a sending profile to have

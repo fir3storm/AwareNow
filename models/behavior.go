@@ -38,21 +38,21 @@ import (
 // user interactions (mouse movements, scrolls, keypresses, etc.) for
 // a specific recipient during a specific session.
 type BehaviorEvent struct {
-	Id          int64     `json:"id" gorm:"column:id; primary_key:yes"`
-	Rid         string    `json:"rid" gorm:"column:r_id"`
-	CampaignId  int64     `json:"campaign_id" gorm:"column:campaign_id"`
-	UserId      int64     `json:"user_id" gorm:"column:user_id"`
-	SessionId   string    `json:"session_id" gorm:"column:session_id"`
-	EventType   string    `json:"event_type" gorm:"column:event_type"`
-	EventTime   time.Time `json:"event_time" gorm:"column:event_time"`
-	TimeOnPage  int64     `json:"time_on_page" gorm:"column:time_on_page"`
-	EmailClient string    `json:"email_client" gorm:"column:email_client"`
-	DeviceType  string    `json:"device_type" gorm:"column:device_type"`
-	Referrer    string    `json:"referrer" gorm:"column:referrer"`
-	TLSCipher   string    `json:"tls_cipher" gorm:"column:tls_cipher"`
+	Id          int64        `json:"id" gorm:"column:id; primary_key:yes"`
+	Rid         string       `json:"rid" gorm:"column:r_id"`
+	CampaignId  int64        `json:"campaign_id" gorm:"column:campaign_id"`
+	UserId      int64        `json:"user_id" gorm:"column:user_id"`
+	SessionId   string       `json:"session_id" gorm:"column:session_id"`
+	EventType   string       `json:"event_type" gorm:"column:event_type"`
+	EventTime   time.Time    `json:"event_time" gorm:"column:event_time"`
+	TimeOnPage  int64        `json:"time_on_page" gorm:"column:time_on_page"`
+	EmailClient string       `json:"email_client" gorm:"column:email_client"`
+	DeviceType  string       `json:"device_type" gorm:"column:device_type"`
+	Referrer    string       `json:"referrer" gorm:"column:referrer"`
+	TLSCipher   string       `json:"tls_cipher" gorm:"column:tls_cipher"`
 	Details     EventDetails `json:"-" gorm:"-"`
-	DetailsJSON string    `json:"details" gorm:"column:details"`
-	CreatedDate time.Time `json:"created_date" gorm:"column:created_date"`
+	DetailsJSON string       `json:"details" gorm:"column:details"`
+	CreatedDate time.Time    `json:"created_date" gorm:"column:created_date"`
 }
 
 // BehaviorEventSummary provides aggregated behavior event data for a recipient.

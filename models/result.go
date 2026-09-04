@@ -24,26 +24,26 @@ type mmGeoPoint struct {
 // Result contains the fields for a result object,
 // which is a representation of a target in a campaign.
 type Result struct {
-	Id              int64     `json:"-"`
-	CampaignId      int64     `json:"-"`
-	UserId          int64     `json:"-"`
-	RId             string    `json:"id"`
-	Status          string    `json:"status" sql:"not null"`
-	IP              string    `json:"ip"`
-	Latitude        float64   `json:"latitude"`
-	Longitude       float64   `json:"longitude"`
-	SendDate        time.Time `json:"send_date"`
-	Reported        bool      `json:"reported" sql:"not null"`
-	ModifiedDate    time.Time `json:"modified_date"`
-	EmailClient     string    `json:"email_client"`
-	DeviceType      string    `json:"device_type"`
-	Referrer        string    `json:"referrer"`
-	TLSVersion      string    `json:"tls_version"`
-	TotalOpens      int       `json:"total_opens"`
-	TotalClicks     int       `json:"total_clicks"`
-	LastActivity    time.Time `json:"last_activity"`
-	TimeToClickMs   int64     `json:"time_to_click_ms"`
-	RiskLevel       string    `json:"risk_level"`
+	Id            int64     `json:"-"`
+	CampaignId    int64     `json:"-"`
+	UserId        int64     `json:"-"`
+	RId           string    `json:"id"`
+	Status        string    `json:"status" sql:"not null"`
+	IP            string    `json:"ip"`
+	Latitude      float64   `json:"latitude"`
+	Longitude     float64   `json:"longitude"`
+	SendDate      time.Time `json:"send_date"`
+	Reported      bool      `json:"reported" sql:"not null"`
+	ModifiedDate  time.Time `json:"modified_date"`
+	EmailClient   string    `json:"email_client"`
+	DeviceType    string    `json:"device_type"`
+	Referrer      string    `json:"referrer"`
+	TLSVersion    string    `json:"tls_version"`
+	TotalOpens    int       `json:"total_opens"`
+	TotalClicks   int       `json:"total_clicks"`
+	LastActivity  time.Time `json:"last_activity"`
+	TimeToClickMs int64     `json:"time_to_click_ms"`
+	RiskLevel     string    `json:"risk_level"`
 	BaseRecipient
 }
 

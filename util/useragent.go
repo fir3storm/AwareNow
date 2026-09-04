@@ -33,15 +33,15 @@ import (
 
 // BrowserInfo holds parsed browser and OS information from a User-Agent string.
 type BrowserInfo struct {
-	Browser         string
-	BrowserVersion  string
-	OS              string
-	OSVersion       string
-	DeviceType      string
-	Platform        string
-	IsMobile        bool
-	IsBot           bool
-	EmailClient     string
+	Browser        string
+	BrowserVersion string
+	OS             string
+	OSVersion      string
+	DeviceType     string
+	Platform       string
+	IsMobile       bool
+	IsBot          bool
+	EmailClient    string
 }
 
 var (
@@ -136,13 +136,13 @@ func GetBrowserName(rawUA string) string {
 func GetBrowserInfo(rawUA string) map[string]string {
 	info := ParseUserAgent(rawUA)
 	return map[string]string{
-		"browser":          info.Browser,
-		"browser_version":  info.BrowserVersion,
-		"os":               info.OS,
-		"os_version":       info.OSVersion,
-		"device_type":      info.DeviceType,
-		"platform":         info.Platform,
-		"email_client":     info.EmailClient,
+		"browser":         info.Browser,
+		"browser_version": info.BrowserVersion,
+		"os":              info.OS,
+		"os_version":      info.OSVersion,
+		"device_type":     info.DeviceType,
+		"platform":        info.Platform,
+		"email_client":    info.EmailClient,
 	}
 }
 

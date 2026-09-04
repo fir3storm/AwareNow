@@ -12,9 +12,9 @@ import (
 
 	"bitbucket.org/liamstask/goose/lib/goose"
 
-	mysql "github.com/go-sql-driver/mysql"
 	"github.com/fir3storm/AwareNow/auth"
 	"github.com/fir3storm/AwareNow/config"
+	mysql "github.com/go-sql-driver/mysql"
 
 	log "github.com/fir3storm/AwareNow/logger"
 	"github.com/jinzhu/gorm"
@@ -39,7 +39,7 @@ const InitialAdminPassword = "GOPHISH_INITIAL_ADMIN_PASSWORD"
 // randomly
 const InitialAdminApiToken = "GOPHISH_INITIAL_ADMIN_API_TOKEN"
 
-	const (
+const (
 	CampaignInProgress string = "In progress"
 	CampaignQueued     string = "Queued"
 	CampaignCreated    string = "Created"

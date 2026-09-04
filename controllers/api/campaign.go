@@ -15,8 +15,8 @@ import (
 // campaignCreateRequest wraps the campaign with additional multi-SMTP fields
 type campaignCreateRequest struct {
 	models.Campaign
-	SMTPIDs        []int64                 `json:"smtp_ids"`
-	DeliveryConfig models.DeliveryConfig   `json:"delivery_config"`
+	SMTPIDs        []int64               `json:"smtp_ids"`
+	DeliveryConfig models.DeliveryConfig `json:"delivery_config"`
 }
 
 // Campaigns returns a list of campaigns if requested via GET.

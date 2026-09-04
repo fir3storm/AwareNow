@@ -72,10 +72,10 @@ func (TenantUser) TableName() string {
 // It maintains a pool of database connections and provides methods
 // to create, retrieve, and delete tenant-specific databases.
 type TenantManager struct {
-	mu       sync.RWMutex
-	db       *gorm.DB
-	conns    map[uint]*gorm.DB
-	dbDir    string
+	mu    sync.RWMutex
+	db    *gorm.DB
+	conns map[uint]*gorm.DB
+	dbDir string
 }
 
 // GetTenantManager returns the singleton TenantManager instance.
@@ -438,13 +438,13 @@ func (tm *TenantManager) GetTenantStats(tenantID uint) (map[string]interface{}, 
 	}
 
 	stats := map[string]interface{}{
-		"tenant_id":   tenant.ID,
-		"name":        tenant.Name,
-		"domain":      tenant.Domain,
-		"is_active":   tenant.IsActive,
-		"created_at":  tenant.CreatedAt,
-		"updated_at":  tenant.UpdatedAt,
-		"db_path":     tenant.DBPath,
+		"tenant_id":  tenant.ID,
+		"name":       tenant.Name,
+		"domain":     tenant.Domain,
+		"is_active":  tenant.IsActive,
+		"created_at": tenant.CreatedAt,
+		"updated_at": tenant.UpdatedAt,
+		"db_path":    tenant.DBPath,
 	}
 
 	// Get database file size

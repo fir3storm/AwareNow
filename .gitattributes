@@ -13,3 +13,6 @@ static/js/jquery* linguist-vendored
 static/js/ui-bootstrap-* linguist-vendored
 static/js/datatables* linguist-vendored
 static/js/sweetalert2.min.js linguist-vendored
+
+# Go tooling and the Linux CI runner use LF line endings.
+*.go text eol=lf

@@ -1,17 +1,44 @@
 package auth
 
 import (
+	"crypto/rand"
 	"errors"
+	"os"
+	"sync"
 	"time"
 
-	"github.com/gophish/gophish/models"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
-	jwtSecret     = []byte("awarenow-jwt-secret-change-in-production")
 	tokenDuration = 24 * time.Hour
 )
+
+// GetJWTSecret returns the JWT secret, loading from environment variable
+// AWARENOW_JWT_SECRET or generating a random one at startup if not configured.
+func GetJWTSecret() []byte {
+	secret := os.Getenv("AWARENOW_JWT_SECRET")
+	if secret != "" {
+		return []byte(secret)
+	}
+	// Generate a random secret at startup if not configured
+	key := make([]byte, 32)
+	_, err := rand.Read(key)
+	if err != nil {
+		panic("failed to generate random JWT secret: " + err.Error())
+	}
+	return key
+}
+
+// jwtSecret is lazily initialized on first use
+var jwtSecret []byte
+var secretOnce sync.Once
+
+func secretOnceInit() {
+	secretOnce.Do(func() {
+		jwtSecret = GetJWTSecret()
+	})
+}
 
 type Claims struct {
 	UserID   uint   `json:"user_id"`
@@ -20,11 +47,11 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(user models.User) (string, error) {
+func GenerateJWT(userID uint, username, role string) (string, error) {
 	claims := &Claims{
-		UserID:   user.Id,
-		Username: user.Username,
-		Role:     user.Role.Name,
+		UserID:   userID,
+		Username: username,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenDuration)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

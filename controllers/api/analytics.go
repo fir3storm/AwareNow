@@ -196,10 +196,10 @@ func exportCSV(w http.ResponseWriter, r *http.Request, uid int64) {
 
 	// Type assert to get the export data structure
 	exportData, ok := data.(struct {
-		Overview    models.AnalyticsOverview `json:"overview"`
-		Timeline    []models.TimelineData    `json:"timeline"`
-		Departments []models.DepartmentStats `json:"departments"`
-		Trends      []models.TrendData       `json:"trends"`
+		Overview    models.AnalyticsOverview  `json:"overview"`
+		Timeline    []models.TimelineData     `json:"timeline"`
+		Departments []models.DepartmentStats  `json:"departments"`
+		Trends      []models.TrendData        `json:"trends"`
 		RiskScore   models.RiskScoreBreakdown `json:"risk_score"`
 	})
 	if !ok {

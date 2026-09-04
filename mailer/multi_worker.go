@@ -24,20 +24,20 @@ const (
 
 // BatchMail represents a group of emails to be sent through a specific SMTP profile.
 type BatchMail struct {
-	Mails       []Mail
-	SMTPID      int64
-	CampaignID  int64
+	Mails      []Mail
+	SMTPID     int64
+	CampaignID int64
 }
 
 // MultiSMTPWorker processes BatchMail instances from a queue, respecting
 // per-SMTP rate limits and selection strategies.
 type MultiSMTPWorker struct {
-	queue        chan *BatchMail
-	rateLimiter  *RateLimiter
-	strategy     SelectionStrategy
-	mu           sync.Mutex
+	queue         chan *BatchMail
+	rateLimiter   *RateLimiter
+	strategy      SelectionStrategy
+	mu            sync.Mutex
 	roundRobinIdx int
-	smtpPool     []int64
+	smtpPool      []int64
 }
 
 // NewMultiSMTPWorker returns an initialized MultiSMTPWorker.

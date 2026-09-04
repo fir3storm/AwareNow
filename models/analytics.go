@@ -8,23 +8,23 @@ import (
 // AnalyticsOverview represents the top-level analytics statistics
 // for the dashboard overview.
 type AnalyticsOverview struct {
-	TotalCampaigns  int64   `json:"total_campaigns"`
-	EmailsSent      int64   `json:"emails_sent"`
-	OpenRate        float64 `json:"open_rate"`
-	ClickRate       float64 `json:"click_rate"`
-	SubmitRate      float64 `json:"submit_rate"`
-	ReportRate      float64 `json:"report_rate"`
-	AvgTimeToClick  string  `json:"avg_time_to_click"`
-	RiskScore       int     `json:"risk_score"`
+	TotalCampaigns int64   `json:"total_campaigns"`
+	EmailsSent     int64   `json:"emails_sent"`
+	OpenRate       float64 `json:"open_rate"`
+	ClickRate      float64 `json:"click_rate"`
+	SubmitRate     float64 `json:"submit_rate"`
+	ReportRate     float64 `json:"report_rate"`
+	AvgTimeToClick string  `json:"avg_time_to_click"`
+	RiskScore      int     `json:"risk_score"`
 }
 
 // TimelineData represents a single point in the analytics timeline,
 // showing the number of opens, clicks, and submits for a given date.
 type TimelineData struct {
-	Date   string `json:"date"`
-	Opens  int64  `json:"opens"`
-	Clicks int64  `json:"clicks"`
-	Submits int64 `json:"submits"`
+	Date    string `json:"date"`
+	Opens   int64  `json:"opens"`
+	Clicks  int64  `json:"clicks"`
+	Submits int64  `json:"submits"`
 }
 
 // DepartmentStats represents analytics statistics broken down by
@@ -48,11 +48,11 @@ type TrendData struct {
 // RiskScoreBreakdown represents the breakdown of the risk score
 // calculation.
 type RiskScoreBreakdown struct {
-	Score          int     `json:"score"`
-	Level          string  `json:"level"`
-	ClickRate      float64 `json:"click_rate"`
-	SubmitRate     float64 `json:"submit_rate"`
-	ReportRate     float64 `json:"report_rate"`
+	Score           int      `json:"score"`
+	Level           string   `json:"level"`
+	ClickRate       float64  `json:"click_rate"`
+	SubmitRate      float64  `json:"submit_rate"`
+	ReportRate      float64  `json:"report_rate"`
 	Recommendations []string `json:"recommendations"`
 }
 
@@ -514,10 +514,10 @@ func generateRecommendations(clickRate, submitRate, reportRate float64) []string
 func ExportAnalyticsData(uid int64, format string) (interface{}, error) {
 	// Gather all analytics data for export
 	type ExportData struct {
-		Overview    AnalyticsOverview `json:"overview"`
-		Timeline    []TimelineData    `json:"timeline"`
-		Departments []DepartmentStats `json:"departments"`
-		Trends      []TrendData       `json:"trends"`
+		Overview    AnalyticsOverview  `json:"overview"`
+		Timeline    []TimelineData     `json:"timeline"`
+		Departments []DepartmentStats  `json:"departments"`
+		Trends      []TrendData        `json:"trends"`
 		RiskScore   RiskScoreBreakdown `json:"risk_score"`
 	}
 
@@ -599,4 +599,3 @@ func GetCampaignAnalytics(cid int64, uid int64) (map[string]interface{}, error) 
 
 	return result, nil
 }
-

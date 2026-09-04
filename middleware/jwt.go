@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/gophish/gophish/auth"
-	ctx "github.com/gophish/gophish/context"
+	"github.com/fir3storm/AwareNow/auth"
+	ctx "github.com/fir3storm/AwareNow/context"
 )
 
 func JWTMiddleware(next http.Handler) http.Handler {
