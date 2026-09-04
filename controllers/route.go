@@ -144,8 +144,11 @@ func (as *AdminServer) registerRoutes() {
 	)
 	router.PathPrefix("/api/").Handler(api)
 
-	// Setup static file serving
-	router.PathPrefix("/").Handler(http.FileServer(unindexed.Dir("./static/")))
+	// Setup static file serving (legacy)
+	router.PathPrefix("/static/").Handler(http.FileServer(unindexed.Dir("./static/")))
+
+	// Serve React SPA for all other routes
+	router.PathPrefix("/").Handler(SpaHandler())
 
 	// Setup CSRF Protection
 	csrfKey := []byte(as.config.CSRFKey)

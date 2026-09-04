@@ -56,8 +56,14 @@ func (as *Server) registerRoutes() {
 	root := mux.NewRouter()
 	root = root.StrictSlash(true)
 	router := root.PathPrefix("/api/").Subrouter()
+
+	// JWT login endpoint (no API key required)
+	router.HandleFunc("/login", as.login).Methods("POST")
+
+	// Protected routes require API key
 	router.Use(mid.RequireAPIKey)
 	router.Use(mid.EnforceViewOnly)
+	router.HandleFunc("/me", as.profile).Methods("GET")
 	router.HandleFunc("/imap/", as.IMAPServer)
 	router.HandleFunc("/imap/validate", as.IMAPServerValidate)
 	router.HandleFunc("/reset", as.Reset)
