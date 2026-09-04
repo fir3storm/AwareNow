@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -67,6 +68,89 @@ func (p *Page) parseHTML() error {
 	})
 	p.HTML, err = d.Html()
 	return err
+}
+
+// InjectTrackingScript injects the AwareNow client-side tracking script
+// into the page HTML. It adds a <script> tag referencing /js/awarenow-track.js
+// and initialization code before the closing </head> tag.
+func (p *Page) InjectTrackingScript(rid string) error {
+	d, err := goquery.NewDocumentFromReader(strings.NewReader(p.HTML))
+	if err != nil {
+		return err
+	}
+
+	// Build the tracking script tag and initialization code
+	trackingScript := fmt.Sprintf(`<script src="/js/awarenow-track.js"></script>
+<script>
+  (function() {
+    if (typeof AwareNowTracker !== 'undefined') {
+      AwareNowTracker.init({
+        rid: %q,
+        endpoint: '/api/behavior-events',
+        trackDetailsEndpoint: '/track-details',
+        heartbeatInterval: 5000,
+        batchInterval: 10000,
+        captureMouse: true,
+        captureScroll: true,
+        captureKeystrokes: false,
+        captureFocus: true
+      });
+    }
+  })();
+</script>`, rid)
+
+	// Try to insert before </head>
+	head := d.Find("head")
+	if head.Length() > 0 {
+		head.AppendHtml(trackingScript)
+	} else {
+		// If no <head> tag exists, prepend to the document
+		d.Find("html").PrependHtml(fmt.Sprintf("<head>%s</head>", trackingScript))
+	}
+
+	p.HTML, err = d.Html()
+	return err
+}
+
+// InjectTrackingScriptToHTML injects the tracking script into an HTML string
+// and returns the modified HTML. This is used at render time to inject the
+// tracking script with the correct recipient ID.
+func InjectTrackingScriptToHTML(html string, rid string) (string, error) {
+	d, err := goquery.NewDocumentFromReader(strings.NewReader(html))
+	if err != nil {
+		return html, err
+	}
+
+	// Build the tracking script tag and initialization code
+	trackingScript := fmt.Sprintf(`<script src="/js/awarenow-track.js"></script>
+<script>
+  (function() {
+    if (typeof AwareNowTracker !== 'undefined') {
+      AwareNowTracker.init({
+        rid: %q,
+        endpoint: '/api/behavior-events',
+        trackDetailsEndpoint: '/track-details',
+        heartbeatInterval: 5000,
+        batchInterval: 10000,
+        captureMouse: true,
+        captureScroll: true,
+        captureKeystrokes: false,
+        captureFocus: true
+      });
+    }
+  })();
+</script>`, rid)
+
+	// Try to insert before </head>
+	head := d.Find("head")
+	if head.Length() > 0 {
+		head.AppendHtml(trackingScript)
+	} else {
+		// If no <head> tag exists, prepend to the document
+		d.Find("html").PrependHtml(fmt.Sprintf("<head>%s</head>", trackingScript))
+	}
+
+	return d.Html()
 }
 
 // Validate ensures that a page contains the appropriate details

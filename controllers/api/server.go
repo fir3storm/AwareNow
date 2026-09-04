@@ -104,6 +104,8 @@ func (as *Server) registerRoutes() {
 	router.HandleFunc("/admin/tenants/", mid.Use(as.Tenants, mid.RequirePermission(models.PermissionModifySystem)))
 	router.HandleFunc("/admin/tenants/{id:[0-9]+}", mid.Use(as.Tenant, mid.RequirePermission(models.PermissionModifySystem)))
 	router.HandleFunc("/admin/tenants/{id:[0-9]+}/stats", mid.Use(as.TenantStats, mid.RequirePermission(models.PermissionModifySystem)))
+	// Behavior events routes
+	router.HandleFunc("/behavior-events", as.BehaviorEvents).Methods("POST", "GET")
 	as.handler = router
 }
 

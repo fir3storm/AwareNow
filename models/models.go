@@ -39,7 +39,7 @@ const InitialAdminPassword = "GOPHISH_INITIAL_ADMIN_PASSWORD"
 // randomly
 const InitialAdminApiToken = "GOPHISH_INITIAL_ADMIN_API_TOKEN"
 
-const (
+	const (
 	CampaignInProgress string = "In progress"
 	CampaignQueued     string = "Queued"
 	CampaignCreated    string = "Created"
@@ -52,6 +52,7 @@ const (
 	EventDataSubmit    string = "Submitted Data"
 	EventReported      string = "Email Reported"
 	EventProxyRequest  string = "Proxied request"
+	EventBehaviorBatch string = "Behavior Events Received"
 	StatusSuccess      string = "Success"
 	StatusQueued       string = "Queued"
 	StatusSending      string = "Sending"
@@ -250,5 +251,17 @@ func Setup(c *config.Config) error {
 			return err
 		}
 	}
+	// Auto-migrate enhanced tracking tables to ensure they exist
+	// even if goose migrations are not run (e.g., fresh GORM-based setups)
+	autoMigrateEnhancedTracking()
 	return nil
+}
+
+// autoMigrateEnhancedTracking ensures the enhanced tracking tables exist
+// in the database using GORM's AutoMigrate. This is a safety net alongside
+// the goose SQL migrations in db/migrations/003_enhanced_tracking.sql.
+func autoMigrateEnhancedTracking() {
+	db.AutoMigrate(&DeviceFingerprint{})
+	db.AutoMigrate(&BehaviorEvent{})
+	db.AutoMigrate(&Session{})
 }

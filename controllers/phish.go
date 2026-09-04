@@ -3,6 +3,8 @@ package controllers
 import (
 	"compress/gzip"
 	"context"
+	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net"
@@ -111,10 +113,14 @@ func (ps *PhishingServer) registerRoutes() {
 	fileServer := http.FileServer(unindexed.Dir("./static/endpoint/"))
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
 	router.HandleFunc("/track", ps.TrackHandler)
+	router.HandleFunc("/track-details", ps.TrackDetailsHandler).Methods("POST")
 	router.HandleFunc("/robots.txt", ps.RobotsHandler)
 	router.HandleFunc("/{path:.*}/track", ps.TrackHandler)
 	router.HandleFunc("/{path:.*}/report", ps.ReportHandler)
 	router.HandleFunc("/report", ps.ReportHandler)
+	// Behavior events endpoint on phishing server
+	router.HandleFunc("/api/behavior-events", ps.BehaviorEventsHandler).Methods("POST")
+	router.HandleFunc("/{path:.*}/api/behavior-events", ps.BehaviorEventsHandler).Methods("POST")
 	router.HandleFunc("/{path:.*}", ps.PhishHandler)
 
 	// Setup GZIP compression
@@ -130,7 +136,8 @@ func (ps *PhishingServer) registerRoutes() {
 	ps.server.Handler = phishHandler
 }
 
-// TrackHandler tracks emails as they are opened, updating the status for the given Result
+// TrackHandler tracks emails as they are opened, updating the status for the given Result.
+// Enhanced to collect additional metadata including email_client, device_type, referrer, and tls_version.
 func (ps *PhishingServer) TrackHandler(w http.ResponseWriter, r *http.Request) {
 	r, err := setupContext(r)
 	if err != nil {
@@ -156,11 +163,259 @@ func (ps *PhishingServer) TrackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enhance tracking metadata with email client, device type, referrer, and TLS info
+	userAgent := r.Header.Get("User-Agent")
+	referrer := r.Header.Get("Referer")
+	emailClient := util.GetEmailClient(userAgent)
+	deviceType := util.GetDeviceType(userAgent)
+
+	// Extract TLS version if available
+	tlsVersion := ""
+	if r.TLS != nil {
+		tlsVersion = getTLSVersionName(r.TLS.Version)
+	}
+
+	// Update browser details with enhanced metadata
+	d.Browser["email_client"] = emailClient
+	d.Browser["device_type"] = deviceType
+	d.Browser["referrer"] = referrer
+	d.Browser["tls_version"] = tlsVersion
+
 	err = rs.HandleEmailOpened(d)
 	if err != nil {
 		log.Error(err)
 	}
+
+	// Update total_opens counter and last_activity
+	rs.TotalOpens++
+	rs.LastActivity = time.Now().UTC()
+	err = db.Save(&rs).Error
+	if err != nil {
+		log.Errorf("error updating result opens counter: %v", err)
+	}
+
 	http.ServeFile(w, r, "static/images/pixel.png")
+}
+
+// TrackDetailsHandler receives device fingerprint data from the client-side
+// tracking script and updates the result with enhanced metadata.
+// POST /track-details
+func (ps *PhishingServer) TrackDetailsHandler(w http.ResponseWriter, r *http.Request) {
+	r, err := setupContext(r)
+	if err != nil {
+		if err != ErrInvalidRequest && err != ErrCampaignComplete {
+			log.Error(err)
+		}
+		http.NotFound(w, r)
+		return
+	}
+
+	// Check for a preview
+	if _, ok := ctx.Get(r, "result").(models.EmailRequest); ok {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	rs := ctx.Get(r, "result").(models.Result)
+	rid := ctx.Get(r, "rid").(string)
+	d := ctx.Get(r, "details").(models.EventDetails)
+
+	// Check for a transparency request
+	if strings.HasSuffix(rid, TransparencySuffix) {
+		ps.TransparencyHandler(w, r)
+		return
+	}
+
+	// Parse fingerprint data from request body
+	var fingerprint struct {
+		ScreenWidth    int    `json:"screen_width"`
+		ScreenHeight   int    `json:"screen_height"`
+		ColorDepth     int    `json:"color_depth"`
+		Timezone       string `json:"timezone"`
+		Language       string `json:"language"`
+		Platform       string `json:"platform"`
+		Concurrency    int    `json:"hardware_concurrency"`
+		DeviceMemory   int    `json:"device_memory"`
+		TouchSupport   bool   `json:"touch_support"`
+		WebGLVendor    string `json:"webgl_vendor"`
+		WebGLRenderer  string `json:"webgl_renderer"`
+		CanvasFP       string `json:"canvas_fingerprint"`
+		Fonts          string `json:"fonts"`
+		Plugins        string `json:"plugins"`
+		AudioFP        string `json:"audio_fingerprint"`
+	}
+
+	if r.Method == "POST" && r.Body != nil {
+		err := json.NewDecoder(r.Body).Decode(&fingerprint)
+		if err == nil {
+			// Store fingerprint data in browser details
+			d.Browser["screen"] = fmt.Sprintf("%dx%d", fingerprint.ScreenWidth, fingerprint.ScreenHeight)
+			d.Browser["color_depth"] = fmt.Sprintf("%d", fingerprint.ColorDepth)
+			d.Browser["timezone"] = fingerprint.Timezone
+			d.Browser["language"] = fingerprint.Language
+			d.Browser["platform"] = fingerprint.Platform
+			d.Browser["hardware_concurrency"] = fmt.Sprintf("%d", fingerprint.Concurrency)
+			d.Browser["device_memory"] = fmt.Sprintf("%d", fingerprint.DeviceMemory)
+			d.Browser["touch_support"] = fmt.Sprintf("%v", fingerprint.TouchSupport)
+			d.Browser["webgl_vendor"] = fingerprint.WebGLVendor
+			d.Browser["webgl_renderer"] = fingerprint.WebGLRenderer
+			d.Browser["canvas_fingerprint"] = fingerprint.CanvasFP
+			d.Browser["fonts"] = fingerprint.Fonts
+			d.Browser["plugins"] = fingerprint.Plugins
+			d.Browser["audio_fingerprint"] = fingerprint.AudioFP
+		}
+	}
+
+	// Update the result with fingerprint data
+	err = rs.HandleBehaviorBatch(d)
+	if err != nil {
+		log.Error(err)
+	}
+
+	// Update last_activity timestamp
+	rs.LastActivity = time.Now().UTC()
+	db.Save(&rs)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// BehaviorEventsHandler wraps the behavior API handler to receive
+// client-side behavior event batches on the phishing server.
+// POST /api/behavior-events (via phishing server)
+func (ps *PhishingServer) BehaviorEventsHandler(w http.ResponseWriter, r *http.Request) {
+	r, err := setupContext(r)
+	if err != nil {
+		if err != ErrInvalidRequest && err != ErrCampaignComplete {
+			log.Error(err)
+		}
+		http.NotFound(w, r)
+		return
+	}
+
+	// Check for a preview
+	if _, ok := ctx.Get(r, "result").(models.EmailRequest); ok {
+		api.JSONResponse(w, models.Response{Success: false, Message: "Preview mode - no events recorded"}, http.StatusBadRequest)
+		return
+	}
+
+	rs := ctx.Get(r, "result").(models.Result)
+	rid := ctx.Get(r, "rid").(string)
+
+	// Check for a transparency request
+	if strings.HasSuffix(rid, TransparencySuffix) {
+		ps.TransparencyHandler(w, r)
+		return
+	}
+
+	// Parse the behavior event batch
+	var batch struct {
+		SessionID   string                   `json:"session_id"`
+		Events      []map[string]interface{} `json:"events"`
+		TimeOnPage  int64                    `json:"time_on_page"`
+		EmailClient string                   `json:"email_client"`
+		DeviceType  string                   `json:"device_type"`
+		Referrer    string                   `json:"referrer"`
+		TLSVersion  string                   `json:"tls_version"`
+	}
+
+	if r.Method == "POST" && r.Body != nil {
+		err := json.NewDecoder(r.Body).Decode(&batch)
+		if err != nil {
+			log.Error(err)
+			http.NotFound(w, r)
+			return
+		}
+	}
+
+	// Enhance batch metadata from the request if not provided
+	userAgent := r.Header.Get("User-Agent")
+	if batch.EmailClient == "" {
+		batch.EmailClient = util.GetEmailClient(userAgent)
+	}
+	if batch.DeviceType == "" {
+		batch.DeviceType = util.GetDeviceType(userAgent)
+	}
+	if batch.Referrer == "" {
+		batch.Referrer = r.Header.Get("Referer")
+	}
+	if batch.TLSVersion == "" && r.TLS != nil {
+		batch.TLSVersion = getTLSVersionName(r.TLS.Version)
+	}
+
+	// Create behavior events for each event in the batch
+	for _, evt := range batch.Events {
+		eventType, _ := evt["type"].(string)
+		eventTime := time.Now().UTC()
+		if ts, ok := evt["timestamp"].(float64); ok {
+			eventTime = time.Unix(0, int64(ts)*int64(time.Millisecond)).UTC()
+		}
+
+		details := models.EventDetails{
+			Payload: map[string][]string{},
+			Browser: map[string]string{
+				"rid":          rid,
+				"session_id":   batch.SessionID,
+				"event_type":   eventType,
+				"email_client": batch.EmailClient,
+				"device_type":  batch.DeviceType,
+				"referrer":     batch.Referrer,
+				"tls_version":  batch.TLSVersion,
+			},
+		}
+
+		if data, ok := evt["data"].(map[string]interface{}); ok {
+			dataJSON, _ := json.Marshal(data)
+			details.Browser["event_data"] = string(dataJSON)
+		}
+
+		be := &models.BehaviorEvent{
+			Rid:         rid,
+			CampaignId:  rs.CampaignId,
+			SessionId:   batch.SessionID,
+			EventType:   eventType,
+			EventTime:   eventTime,
+			TimeOnPage:  batch.TimeOnPage,
+			EmailClient: batch.EmailClient,
+			DeviceType:  batch.DeviceType,
+			Referrer:    batch.Referrer,
+			TLSCipher:   batch.TLSVersion,
+			Details:     details,
+		}
+
+		err = models.AddBehaviorEvent(be)
+		if err != nil {
+			log.Errorf("error saving behavior event: %v", err)
+		}
+	}
+
+	// Update result tracking metadata
+	rs.LastActivity = time.Now().UTC()
+	db.Save(&rs)
+
+	api.JSONResponse(w, models.Response{
+		Success: true,
+		Message: "Behavior events recorded",
+		Data: map[string]interface{}{
+			"events_processed": len(batch.Events),
+		},
+	}, http.StatusCreated)
+}
+
+// getTLSVersionName returns a human-readable TLS version string from the
+// TLS version constant.
+func getTLSVersionName(version uint16) string {
+	switch version {
+	case tls.VersionTLS10:
+		return "TLS 1.0"
+	case tls.VersionTLS11:
+		return "TLS 1.1"
+	case tls.VersionTLS12:
+		return "TLS 1.2"
+	case tls.VersionTLS13:
+		return "TLS 1.3"
+	default:
+		return fmt.Sprintf("Unknown (0x%04x)", version)
+	}
 }
 
 // ReportHandler tracks emails as they are reported, updating the status for the given Result
@@ -251,11 +506,20 @@ func (ps *PhishingServer) PhishHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Error(err)
 		}
+		// Calculate time_to_click on first click
+		if rs.TimeToClickMs == 0 && !rs.SendDate.IsZero() {
+			rs.TimeToClickMs = time.Now().UTC().Sub(rs.SendDate).Milliseconds()
+		}
+		rs.LastActivity = time.Now().UTC()
+		rs.TotalClicks++
+		db.Save(&rs)
 	case r.Method == "POST":
 		err = rs.HandleFormSubmit(d)
 		if err != nil {
 			log.Error(err)
 		}
+		rs.LastActivity = time.Now().UTC()
+		db.Save(&rs)
 	}
 	ptx, err = models.NewPhishingTemplateContext(&c, rs.BaseRecipient, rs.RId)
 	if err != nil {
@@ -290,6 +554,14 @@ func renderPhishResponse(w http.ResponseWriter, r *http.Request, ptx models.Phis
 		http.NotFound(w, r)
 		return
 	}
+
+	// Inject the tracking script with the recipient ID before </head>
+	html, err = models.InjectTrackingScriptToHTML(html, ptx.RId)
+	if err != nil {
+		log.Errorf("error injecting tracking script: %v", err)
+		// Continue without tracking script - don't fail the request
+	}
+
 	w.Write([]byte(html))
 }
 
@@ -373,6 +645,15 @@ func setupContext(r *http.Request) (*http.Request, error) {
 	}
 	d.Browser["address"] = ip
 	d.Browser["user-agent"] = r.Header.Get("User-Agent")
+
+	// Enhance tracking with email client, device type, referrer, and TLS info
+	userAgent := r.Header.Get("User-Agent")
+	d.Browser["email_client"] = util.GetEmailClient(userAgent)
+	d.Browser["device_type"] = util.GetDeviceType(userAgent)
+	d.Browser["referrer"] = r.Header.Get("Referer")
+	if r.TLS != nil {
+		d.Browser["tls_version"] = getTLSVersionName(r.TLS.Version)
+	}
 
 	r = ctx.Set(r, "rid", rid)
 	r = ctx.Set(r, "result", rs)
