@@ -17,8 +17,8 @@ export type TenantLifecycle =
 export type TenantPrincipal = {
   subjectId: string;
   role: 'platform_admin' | 'tenant_member' | 'tenant_engine';
-  tenantId: string | null;
-  engineTenantId: string | null;
+  tenantId?: string;
+  engineTenantId?: string;
 };
 
 export type SafeEngineEvent = {
@@ -50,20 +50,23 @@ export type SafeCampaignSummary = {
   name: string;
   status: string;
   created_at: string;
-  launch_date: string | null;
+  // The Go engine serializes this field from a non-pointer time.Time. An
+  // unlaunched campaign therefore serializes as the Go zero-time string
+  // "0001-01-01T00:00:00Z", never JSON null.
+  launch_date: string;
   result_count: number;
 };
 
 export type ProvisioningRequest = {
   tenantId: string;
-  idempotencyKey: string;
 };
 ```
 
 `TenantPrincipal` is authentication-derived data. A tenant member has its
 tenant in `tenantId`; an engine credential has its bound tenant in
 `engineTenantId`; a platform administrator without an explicitly selected
-tenant has `tenantId: null`.
+tenant omits `tenantId` entirely (the field is optional, not present as an
+explicit `null`).
 
 ## HTTP acceptance examples
 
@@ -89,8 +92,8 @@ HTTP/1.1 202 Accepted
 Content-Type: application/json
 
 {
-  "eventId": "evt_01J9A6K4X8ZP7Q2M3N5R",
-  "status": "accepted"
+  "accepted": true,
+  "eventId": "evt_01J9A6K4X8ZP7Q2M3N5R"
 }
 ```
 
@@ -120,7 +123,7 @@ HTTP/1.1 400 Bad Request
 Content-Type: application/json
 
 {
-  "error": "unsafe_event"
+  "error": "Invalid request."
 }
 ```
 
@@ -169,6 +172,11 @@ Content-Type: application/json
 }
 ```
 
+The example above shows a launched campaign. An unlaunched campaign's
+`launch_date` serializes as the Go zero-time string
+`"0001-01-01T00:00:00Z"`, never JSON `null` — see the note on
+`SafeCampaignSummary` above.
+
 ## Trust boundaries
 
 - Tenant scope is derived only from an authenticated `TenantPrincipal`. A
@@ -191,4 +199,8 @@ Content-Type: application/json
   captured form values, or credential values.
 - Provisioning and privileged engine actions require the appropriate
   authenticated principal and create immutable audit entries. Provisioning is
-  idempotent by `ProvisioningRequest.idempotencyKey` for its `tenantId`.
+  idempotent by tenant lifecycle state, not a client-supplied key: a
+  `ProvisioningRequest` names only the `tenantId` to provision, and
+  `provisionTenant` is a no-op (`changed: false`) whenever that tenant is not
+  in the `PROVISIONING` lifecycle state — repeating the same request against
+  an already-active or already-failed tenant has no additional effect.

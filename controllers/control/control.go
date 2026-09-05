@@ -20,6 +20,9 @@ type EngineHealth struct {
 
 // SafeCampaignSummary contains only aggregate campaign information that may
 // cross the private control boundary.
+//
+// LaunchDate is a non-pointer time.Time: an unlaunched campaign serializes it
+// as Go's zero-time string ("0001-01-01T00:00:00Z"), never JSON null.
 type SafeCampaignSummary struct {
 	ID          int64     `json:"id"`
 	Name        string    `json:"name"`
@@ -46,6 +49,11 @@ type CampaignStopper interface {
 // NewHandler creates the private control-plane handler. The caller is
 // responsible for mounting it under /api/v1/control after validating that the
 // configured AWARENOW_CONTROL_TOKEN is non-empty.
+//
+// The handler's own routes are bare paths ("/health", "/campaigns", etc.),
+// not prefixed with /api/v1/control. Whoever mounts this handler on a router
+// must strip that prefix first, e.g. http.StripPrefix("/api/v1/control", handler),
+// or every route below will 404.
 func NewHandler(token string, campaignReader CampaignReader, campaignStopper CampaignStopper) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if !authorized(r.Header.Get("Authorization"), token) {

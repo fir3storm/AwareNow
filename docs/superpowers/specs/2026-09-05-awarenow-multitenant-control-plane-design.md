@@ -113,3 +113,5 @@ docs/architecture/             # versioned inter-service contracts
 ## Explicitly deferred
 
 SSO/SCIM implementation, a production secret manager, actual container orchestration, tenant domain automation, SMTP/Graph/Gmail connectors, AI scenario generation, SIEM/LMS adapters, scheduled reporting, mobile/SMS vectors, and migration of historical PhishSentinel records are intentionally deferred. Interfaces established here must not preclude them.
+
+Mounting the Go engine's private control API (`controllers/control`) into the running router — the legacy engine's campaign operations are user-scoped, and a control-plane bearer token doesn't yet have a clean mapping onto that model; see `control-plane/README.md` for the full rationale.
