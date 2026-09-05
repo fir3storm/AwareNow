@@ -256,6 +256,8 @@ func Setup(c *config.Config) error {
 	autoMigrateEnhancedTracking()
 	// Auto-migrate multi-SMTP tables
 	autoMigrateMultiSMTP()
+	// Auto-migrate reported message tables
+	autoMigrateReportedMessages()
 	return nil
 }
 
@@ -275,4 +277,11 @@ func autoMigrateEnhancedTracking() {
 func autoMigrateMultiSMTP() {
 	db.AutoMigrate(&CampaignSMTP{})
 	db.AutoMigrate(&SMTPUsage{})
+}
+
+// autoMigrateReportedMessages ensures the reported messages table exists
+// in the database using GORM's AutoMigrate. There is no corresponding goose
+// SQL migration file for this table; GORM's AutoMigrate is sufficient here.
+func autoMigrateReportedMessages() {
+	db.AutoMigrate(&ReportedMessage{})
 }
