@@ -16,7 +16,7 @@
         .qr-section h3 { margin: 0 0 8px; color: #1a1a1a; font-size: 16px; }
         .qr-section p { font-size: 13px; color: #666; margin: 0 0 20px; }
         .qr-placeholder { width: 200px; height: 200px; margin: 0 auto; }
-        .qr-placeholder svg { width: 100%; height: 100%; }
+        .qr-placeholder img { width: 100%; height: 100%; display: block; }
         .wifi-info { background: #F7F7F7; border-radius: 6px; padding: 16px 20px; margin: 20px 0; font-size: 14px; }
         .wifi-row { display: flex; padding: 6px 0; border-bottom: 1px solid #E0E0E0; }
         .wifi-row:last-child { border: none; }
@@ -48,35 +48,7 @@
                 <h3>Scan to Connect to CorpWifi-Secure</h3>
                 <p>Point your device camera at the code below</p>
                 <div class="qr-placeholder">
-                    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="200" height="200" fill="white"/>
-                        <rect x="10" y="10" width="60" height="60" fill="black"/>
-                        <rect x="16" y="16" width="48" height="48" fill="white"/>
-                        <rect x="22" y="22" width="36" height="36" fill="black"/>
-                        <rect x="130" y="10" width="60" height="60" fill="black"/>
-                        <rect x="136" y="16" width="48" height="48" fill="white"/>
-                        <rect x="142" y="22" width="36" height="36" fill="black"/>
-                        <rect x="10" y="130" width="60" height="60" fill="black"/>
-                        <rect x="16" y="136" width="48" height="48" fill="white"/>
-                        <rect x="22" y="142" width="36" height="36" fill="black"/>
-                        <rect x="80" y="10" width="8" height="8" fill="black"/>
-                        <rect x="96" y="10" width="8" height="8" fill="black"/>
-                        <rect x="10" y="80" width="8" height="8" fill="black"/>
-                        <rect x="10" y="96" width="8" height="8" fill="black"/>
-                        <rect x="80" y="80" width="8" height="8" fill="black"/>
-                        <rect x="104" y="80" width="8" height="8" fill="black"/>
-                        <rect x="80" y="104" width="8" height="8" fill="black"/>
-                        <rect x="104" y="104" width="8" height="8" fill="black"/>
-                        <rect x="120" y="80" width="8" height="8" fill="black"/>
-                        <rect x="140" y="80" width="8" height="8" fill="black"/>
-                        <rect x="160" y="80" width="8" height="8" fill="black"/>
-                        <rect x="80" y="140" width="8" height="8" fill="black"/>
-                        <rect x="100" y="140" width="8" height="8" fill="black"/>
-                        <rect x="120" y="140" width="8" height="8" fill="black"/>
-                        <rect x="140" y="160" width="8" height="8" fill="black"/>
-                        <rect x="160" y="140" width="8" height="8" fill="black"/>
-                        <rect x="160" y="160" width="8" height="8" fill="black"/>
-                    </svg>
+                    <img src="{{.QRCode}}" alt="New Office WiFi QR Code" />
                 </div>
             </div>
 

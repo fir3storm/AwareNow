@@ -28,6 +28,8 @@ require (
 	gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405
 )
 
+require github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
+
 require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
