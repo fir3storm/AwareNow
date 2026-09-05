@@ -82,9 +82,10 @@ func GetCampaignSMTPs(campaignID int64) ([]CampaignSMTP, error) {
 	return cs, nil
 }
 
-// IncrementSMTPUsage increments the email sent counter for a specific
-// campaign-SMTP association.
-func IncrementSMTPUsage(campaignID, smtpID int64) error {
+// IncrementCampaignSMTPUsage increments the email sent counter for a specific
+// campaign-SMTP association. Distinct from IncrementSMTPUsage in smtp.go,
+// which tracks a sending profile's global hourly usage.
+func IncrementCampaignSMTPUsage(campaignID, smtpID int64) error {
 	err := db.Model(&CampaignSMTP{}).
 		Where("campaign_id = ? AND smtp_id = ?", campaignID, smtpID).
 		UpdateColumn("emails_sent", gorm.Expr("emails_sent + ?", 1)).Error

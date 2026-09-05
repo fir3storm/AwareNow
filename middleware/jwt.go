@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"net/http"
 	"strings"
 
@@ -29,11 +28,10 @@ func JWTMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		context := r.Context()
-		context = ctx.Set(context, "user_id", claims.UserID)
-		context = ctx.Set(context, "username", claims.Username)
-		context = ctx.Set(context, "role", claims.Role)
+		r = ctx.Set(r, "user_id", claims.UserID)
+		r = ctx.Set(r, "username", claims.Username)
+		r = ctx.Set(r, "role", claims.Role)
 
-		next.ServeHTTP(w, r.WithContext(context))
+		next.ServeHTTP(w, r)
 	})
 }

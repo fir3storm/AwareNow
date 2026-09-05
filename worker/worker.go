@@ -221,7 +221,7 @@ func (w *DefaultWorker) processCampaigns(t time.Time) error {
 					"campaign_id":      cid,
 					"num_smtps":        len(campaignSMTPs),
 					"strategy":         dc.SelectionStrategy,
-					"delay_between_ms": dc.DelayBetweenMs,
+					"delay_between_ms": dc.DelayBetweenEmails,
 				}).Info("Distributing emails across multiple SMTP profiles")
 
 				grouped := distributeEmails(msc, campaignSMTPs, dc)
@@ -251,8 +251,8 @@ func (w *DefaultWorker) processCampaigns(t time.Time) error {
 					models.BatchIncrementSMTPUsage(smtpID, int64(len(group)))
 
 					// Apply delay between SMTP groups if configured
-					if dc.DelayBetweenMs > 0 {
-						time.Sleep(time.Duration(dc.DelayBetweenMs) * time.Millisecond)
+					if dc.DelayBetweenEmails > 0 {
+						time.Sleep(time.Duration(dc.DelayBetweenEmails) * time.Millisecond)
 					}
 				}
 			} else {
@@ -364,8 +364,8 @@ func (w *DefaultWorker) LaunchCampaign(c models.Campaign) {
 			models.BatchIncrementSMTPUsage(smtpID, int64(len(group)))
 
 			// Apply delay between SMTP groups if configured
-			if dc.DelayBetweenMs > 0 {
-				time.Sleep(time.Duration(dc.DelayBetweenMs) * time.Millisecond)
+			if dc.DelayBetweenEmails > 0 {
+				time.Sleep(time.Duration(dc.DelayBetweenEmails) * time.Millisecond)
 			}
 		}
 	} else {

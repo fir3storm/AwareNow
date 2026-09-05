@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"errors"
 	"time"
 
@@ -26,19 +25,6 @@ type DeviceFingerprint struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// BehaviorEvent records individual user interactions during a campaign
-// session, enabling behavioral analysis of recipients.
-type BehaviorEvent struct {
-	ID         int64           `json:"id"`
-	CampaignID int64           `json:"campaign_id"`
-	RId        string          `json:"r_id"`
-	EventType  string          `json:"event_type" sql:"not null"`
-	EventData  json.RawMessage `json:"event_data" sql:"type:text"`
-	SessionID  string          `json:"session_id"`
-	TimeOnPage int             `json:"time_on_page"`
-	CreatedAt  time.Time       `json:"created_at"`
-}
-
 // Session represents a single visit/engagement session by a campaign
 // recipient, aggregating behavior events and device information.
 type Session struct {
@@ -56,9 +42,6 @@ type Session struct {
 
 // ErrDeviceFingerprintNotFound indicates no fingerprint was found for the given criteria
 var ErrDeviceFingerprintNotFound = errors.New("device fingerprint not found")
-
-// ErrBehaviorEventNotFound indicates no behavior event was found for the given criteria
-var ErrBehaviorEventNotFound = errors.New("behavior event not found")
 
 // ErrSessionNotFound indicates no session was found for the given criteria
 var ErrSessionNotFound = errors.New("session not found")
@@ -145,98 +128,10 @@ func DeleteDeviceFingerprintsByCampaign(campaignID int64) error {
 	return nil
 }
 
-// --- BehaviorEvent CRUD ---
-
-// CreateBehaviorEvent inserts a new behavior event into the database
-func CreateBehaviorEvent(be *BehaviorEvent) error {
-	be.CreatedAt = time.Now().UTC()
-	err := db.Save(be).Error
-	if err != nil {
-		log.Errorf("error creating behavior event: %v", err)
-		return err
-	}
-	return nil
-}
-
-// GetBehaviorEventByID retrieves a behavior event by its primary key
-func GetBehaviorEventByID(id int64) (BehaviorEvent, error) {
-	be := BehaviorEvent{}
-	err := db.Where("id = ?", id).First(&be).Error
-	if err != nil {
-		if err == gorm.ErrRecordNotFound {
-			return be, ErrBehaviorEventNotFound
-		}
-		log.Errorf("error getting behavior event by id: %v", err)
-		return be, err
-	}
-	return be, nil
-}
-
-// GetBehaviorEventsByRId retrieves all behavior events for a recipient
-func GetBehaviorEventsByRId(rid string) ([]BehaviorEvent, error) {
-	events := []BehaviorEvent{}
-	err := db.Where("r_id = ?", rid).Order("created_at asc").Find(&events).Error
-	if err != nil {
-		log.Errorf("error getting behavior events by r_id: %v", err)
-		return events, err
-	}
-	return events, nil
-}
-
-// GetBehaviorEventsBySession retrieves all behavior events for a specific session
-func GetBehaviorEventsBySession(sessionID string) ([]BehaviorEvent, error) {
-	events := []BehaviorEvent{}
-	err := db.Where("session_id = ?", sessionID).Order("created_at asc").Find(&events).Error
-	if err != nil {
-		log.Errorf("error getting behavior events by session: %v", err)
-		return events, err
-	}
-	return events, nil
-}
-
-// GetBehaviorEventsByCampaign retrieves all behavior events for a campaign
-func GetBehaviorEventsByCampaign(campaignID int64) ([]BehaviorEvent, error) {
-	events := []BehaviorEvent{}
-	err := db.Where("campaign_id = ?", campaignID).Order("created_at asc").Find(&events).Error
-	if err != nil {
-		log.Errorf("error getting behavior events by campaign: %v", err)
-		return events, err
-	}
-	return events, nil
-}
-
-// GetBehaviorEventsByType retrieves behavior events of a specific type for a campaign
-func GetBehaviorEventsByType(campaignID int64, eventType string) ([]BehaviorEvent, error) {
-	events := []BehaviorEvent{}
-	err := db.Where("campaign_id = ? AND event_type = ?", campaignID, eventType).Order("created_at asc").Find(&events).Error
-	if err != nil {
-		log.Errorf("error getting behavior events by type: %v", err)
-		return events, err
-	}
-	return events, nil
-}
-
-// UpdateBehaviorEvent updates an existing behavior event record
-func UpdateBehaviorEvent(be *BehaviorEvent) error {
-	err := db.Model(be).Where("id = ?", be.ID).Updates(be).Error
-	if err != nil {
-		log.Errorf("error updating behavior event: %v", err)
-		return err
-	}
-	return nil
-}
-
-// DeleteBehaviorEvent removes a behavior event by its primary key
-func DeleteBehaviorEvent(id int64) error {
-	err := db.Where("id = ?", id).Delete(&BehaviorEvent{}).Error
-	if err != nil {
-		log.Errorf("error deleting behavior event: %v", err)
-		return err
-	}
-	return nil
-}
-
-// DeleteBehaviorEventsByCampaign removes all behavior events for a campaign
+// DeleteBehaviorEventsByCampaign removes all behavior events for a campaign.
+// BehaviorEvent itself is defined in behavior.go (the schema actually wired
+// to the live tracking pipeline); this cleanup helper lives here alongside
+// the other campaign-teardown helpers in this file.
 func DeleteBehaviorEventsByCampaign(campaignID int64) error {
 	err := db.Where("campaign_id = ?", campaignID).Delete(&BehaviorEvent{}).Error
 	if err != nil {
