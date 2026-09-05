@@ -1,5 +1,5 @@
 [Unit]
-Description=Gophish (authorized phishing simulation)
+Description=AwareNow campaign service (Gophish-compatible)
 After=network-online.target
 Wants=network-online.target
 
@@ -7,8 +7,8 @@ Wants=network-online.target
 Type=simple
 User=gophish
 Group=gophish
-WorkingDirectory=/opt/gophish/runtime
-ExecStart=/opt/gophish/runtime/gophish
+WorkingDirectory=/opt/awarenow/runtime
+ExecStart=/opt/awarenow/runtime/gophish
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65535

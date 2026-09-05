@@ -42,9 +42,9 @@ The reference deployment uses these domains and ports:
 | Administrator console | `admin.itsupport.insec.in` | `3333` |
 | nginx HTTPS | public hostnames | `443` |
 
-The imported deployment examples retain upstream Gophish-compatible service
-and runtime identifiers. Treat the sample domains and `/opt/gophish` paths as
-deployment configuration to review; do not copy them blindly into production.
+The deployment examples retain upstream-compatible service identifiers where
+the runtime requires them. The reference installation root is `/opt/awarenow`;
+review sample domains and host settings before using them in production.
 
 ## Template library
 

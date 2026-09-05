@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Install official Gophish v0.12.1 on the AwareCheck VPS without touching
-# AwareCheck, nginx :80/:443, or ports 8000/8001/9000.
+# Install the AwareNow deployment runtime (Gophish-compatible v0.12.1) without
+# touching the existing nginx :80/:443 listeners or unrelated application ports.
 set -euo pipefail
 
 GOPHISH_VERSION="0.12.1"
 GOPHISH_SHA256="44f598c1eeb72c3b08fa73d57049022d96cea2872283b87a73d21af78a2c6d47"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RUNTIME_DIR="${RUNTIME_DIR:-/opt/gophish/runtime}"
+RUNTIME_DIR="${RUNTIME_DIR:-/opt/awarenow/runtime}"
 ADMIN_HOST="${GOPHISH_ADMIN_HOST:-admin.itsupport.insec.in}"
 PHISH_HOST="${GOPHISH_PHISH_HOST:-itsupport.insec.in}"
 ADMIN_PORT="${GOPHISH_ADMIN_PORT:-3333}"
@@ -29,7 +29,7 @@ TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
 ZIP="$TMP/gophish.zip"
-echo "Downloading Gophish v${GOPHISH_VERSION}..."
+echo "Downloading AwareNow runtime (Gophish-compatible v${GOPHISH_VERSION})..."
 curl -fsSL -o "$ZIP" \
   "https://github.com/gophish/gophish/releases/download/v${GOPHISH_VERSION}/gophish-v${GOPHISH_VERSION}-linux-64bit.zip"
 
@@ -85,7 +85,7 @@ fi
 
 sleep 2
 echo
-echo "Gophish is installed."
+echo "AwareNow is installed."
 echo "  Admin (local):  http://127.0.0.1:${ADMIN_PORT}"
 echo "  Admin (public): http://${ADMIN_HOST}   (needs DNS A record)"
 echo "  Phish (public): http://${PHISH_HOST}   (needs DNS A record)"

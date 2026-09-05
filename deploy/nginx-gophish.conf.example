@@ -1,5 +1,5 @@
-# Gophish on the same VPS as AwareCheck.
-# nginx already owns :80 / :443. Gophish listens on localhost only.
+# AwareNow on the same VPS as the rest of the authorized training stack.
+# nginx already owns :80 / :443. The compatible campaign service listens on localhost only.
 #
 # DNS (insec.in zone):
 #   A    itsupport          77.107.95.65
@@ -35,7 +35,7 @@ server {
     # Education page after a click/submit. Campaign tracking stays on /.
     location = /got-phished {
         default_type text/html;
-        alias /opt/gophish/templates/insec/static/got-phished.html;
+        alias /opt/awarenow/templates/insec/static/got-phished.html;
     }
 
     location / {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Keep only English email templates and landing pages.
+"""Keep only English email templates and landing pages in AwareNow.
 
 Deletes HailBytes Spanish/Portuguese packs from this repo. With --gophish,
 also removes already-imported records identified by those retired packs.
@@ -127,13 +127,13 @@ def main() -> int:
     parser.add_argument(
         "--gophish",
         action="store_true",
-        help="Also delete non-English emails/pages already imported into Gophish",
+        help="Also delete non-English emails/pages already imported into AwareNow",
     )
     args = parser.parse_args()
 
     if args.gophish and not API_KEY:
         print(
-            "Set GOPHISH_API_KEY to clean the live Gophish lists.",
+            "Set GOPHISH_API_KEY to clean the live AwareNow lists.",
             file=sys.stderr,
         )
         return 1

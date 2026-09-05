@@ -1,4 +1,4 @@
-# Email and landing-page templates for Gophish
+# Email and landing-page templates for AwareNow
 
 Authorized security-awareness use only.
 
@@ -16,25 +16,25 @@ Keep each vendor `LICENSE` / `README` with those files.
 ## Import on the VPS
 
 ```bash
-cd /opt/gophish && git pull origin main
+cd /opt/awarenow && git pull origin main
 apt-get install -y sqlite3 python3
-export GOPHISH_API_KEY=$(sqlite3 /opt/gophish/runtime/gophish.db "SELECT api_key FROM users WHERE username='admin';")
-python3 /opt/gophish/scripts/import-templates.py
+export GOPHISH_API_KEY=$(sqlite3 /opt/awarenow/runtime/gophish.db "SELECT api_key FROM users WHERE username='admin';")
+python3 /opt/awarenow/scripts/import-templates.py
 ```
 
-Templates appear in Gophish under **Email Templates** and **Landing Pages**. Re-running skips names that already exist.
+Templates appear in AwareNow under **Email Templates** and **Landing Pages**. Re-running skips names that already exist.
 
-English only: HailBytes Spanish/Portuguese packs are not imported. To drop them from the repo and from Gophish if they were already imported:
+English only: HailBytes Spanish/Portuguese packs are not imported. To drop them from the repo and from AwareNow if they were already imported:
 
 ```bash
-cd /opt/gophish && git pull origin main
-export GOPHISH_API_KEY=$(sqlite3 /opt/gophish/runtime/gophish.db "SELECT api_key FROM users WHERE username='admin';")
-python3 /opt/gophish/scripts/keep-english-templates.py --gophish
+cd /opt/awarenow && git pull origin main
+export GOPHISH_API_KEY=$(sqlite3 /opt/awarenow/runtime/gophish.db "SELECT api_key FROM users WHERE username='admin';")
+python3 /opt/awarenow/scripts/keep-english-templates.py --gophish
 ```
 
 Optional education redirect (default is StaySafeOnline):
 
 ```bash
-export GOPHISH_REDIRECT_URL="https://awarechck.com"
-python3 /opt/gophish/scripts/import-templates.py
+export GOPHISH_REDIRECT_URL="https://example.invalid/awarenow-training"
+python3 /opt/awarenow/scripts/import-templates.py
 ```

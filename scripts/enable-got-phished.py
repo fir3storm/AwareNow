@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Insert /got-phished into live nginx for itsupport.insec.in only.
+"""Insert /got-phished into live nginx for the configured AwareNow host only.
 
 Does not rewrite the whole site file, so certbot TLS stays intact.
 Run as root via scripts/enable-got-phished.sh
@@ -13,7 +13,7 @@ import sys
 PHISH_HOST = os.environ.get("GOPHISH_PHISH_HOST", "itsupport.insec.in")
 HTML_PATH = os.environ.get(
     "GOPHISH_GOT_PHISHED_HTML",
-    "/opt/gophish/templates/insec/static/got-phished.html",
+    "/opt/awarenow/templates/insec/static/got-phished.html",
 )
 SNIPPET_PATH = "/etc/nginx/snippets/gophish-got-phished.conf"
 INCLUDE = f"    include {SNIPPET_PATH};\n"
@@ -124,7 +124,7 @@ def main() -> int:
         print("Run as root.", file=sys.stderr)
         return 1
     if not os.path.isfile(HTML_PATH):
-        print(f"Missing {HTML_PATH}. git pull the gophish repo first.", file=sys.stderr)
+        print(f"Missing {HTML_PATH}. Check the AwareNow checkout first.", file=sys.stderr)
         return 1
 
     os.makedirs(os.path.dirname(SNIPPET_PATH), exist_ok=True)
