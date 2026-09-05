@@ -74,12 +74,12 @@ echo "Building AwareNow from source..."
 # template.ParseFiles, with no reference to web/dist), so this step must
 # never abort the install of the actual campaign-engine service below.
 if command -v npm >/dev/null 2>&1; then
-  if ( cd "$REPO_ROOT/web" && npm ci && npm run build ); then
-    mkdir -p "$RUNTIME_DIR/web"
-    rm -rf "$RUNTIME_DIR/web/dist"
-    cp -a "$REPO_ROOT/web/dist" "$RUNTIME_DIR/web/dist"
+  if ( cd "$REPO_ROOT/web" && npm ci && npm run build && \
+       mkdir -p "$RUNTIME_DIR/web" && rm -rf "$RUNTIME_DIR/web/dist" && \
+       cp -a "$REPO_ROOT/web/dist" "$RUNTIME_DIR/web/dist" ); then
+    echo "Staged web/ frontend build at $RUNTIME_DIR/web/dist (not yet served)."
   else
-    echo "WARNING: web/ frontend build failed, skipping (does not affect the campaign engine)." >&2
+    echo "WARNING: web/ frontend build or staging failed, skipping (does not affect the campaign engine)." >&2
   fi
 else
   echo "WARNING: npm not found, skipping web/ frontend build (does not affect the campaign engine)." >&2
@@ -95,10 +95,17 @@ fi
 
 cp -a "$TMP/gophish" "$RUNTIME_DIR/gophish"
 chmod +x "$RUNTIME_DIR/gophish"
-rm -rf "$RUNTIME_DIR/templates" "$RUNTIME_DIR/static" "$RUNTIME_DIR/db"
-cp -a "$REPO_ROOT/templates" "$RUNTIME_DIR/templates"
-cp -a "$REPO_ROOT/static" "$RUNTIME_DIR/static"
-cp -a "$REPO_ROOT/db" "$RUNTIME_DIR/db"
+# Stage each new directory fully under a .new path before touching the old
+# one, so a mid-copy failure (disk full, I/O error, permission issue) never
+# leaves templates/, static/, or db/ in a fully-missing state: the old
+# directory is only removed once its replacement has been completely and
+# successfully copied.
+for d in templates static db; do
+  rm -rf "$RUNTIME_DIR/${d}.new"
+  cp -a "$REPO_ROOT/$d" "$RUNTIME_DIR/${d}.new"
+  rm -rf "$RUNTIME_DIR/$d"
+  mv "$RUNTIME_DIR/${d}.new" "$RUNTIME_DIR/$d"
+done
 
 if [[ -f "$TMP/gophish.db.bak" ]]; then
   cp -a "$TMP/gophish.db.bak" "$RUNTIME_DIR/gophish.db"
