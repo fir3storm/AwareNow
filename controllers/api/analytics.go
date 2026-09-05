@@ -257,7 +257,8 @@ func exportCSV(w http.ResponseWriter, r *http.Request, uid int64) {
 		fmt.Sprintf("%.2f%%", exportData.RiskScore.ReportRate),
 	})
 
-	if err := writer.Flush(); err != nil {
+	writer.Flush()
+	if err := writer.Error(); err != nil {
 		log.Errorf("error flushing CSV writer: %v", err)
 		JSONResponse(w, models.Response{Success: false, Message: "Error generating CSV"}, http.StatusInternalServerError)
 		return

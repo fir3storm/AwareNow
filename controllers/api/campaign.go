@@ -111,7 +111,8 @@ func (as *Server) Campaigns(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Store delivery config (stored in campaign record)
-		if req.DelayBetweenMs > 0 || req.SelectionStrategy != "" || req.MaxEmailsPerProfile > 0 || req.RetryFailedProfiles {
+		dc := req.DeliveryConfig
+		if dc.DelayBetweenEmails > 0 || dc.SelectionStrategy != "" || dc.MaxEmailsPerProfile > 0 || dc.RetryFailedProfiles {
 			err = storeDeliveryConfig(c.Id, req.DeliveryConfig)
 			if err != nil {
 				log.WithFields(map[string]interface{}{
@@ -141,11 +142,10 @@ func storeCampaignSMTPs(campaignID int64, smtpIDs []int64, uid int64) error {
 	// Delete any existing relationships first (for idempotency)
 	models.DeleteCampaignSMTPsByCampaign(campaignID)
 
-	for i, smtpID := range smtpIDs {
+	for _, smtpID := range smtpIDs {
 		cs := &models.CampaignSMTP{
-			CampaignId: campaignID,
-			SMTPId:     smtpID,
-			Priority:   i,
+			CampaignID: campaignID,
+			SMTPID:     smtpID,
 		}
 		if err := models.PostCampaignSMTP(cs); err != nil {
 			return err

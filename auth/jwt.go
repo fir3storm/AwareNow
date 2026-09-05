@@ -41,13 +41,13 @@ func secretOnceInit() {
 }
 
 type Claims struct {
-	UserID   uint   `json:"user_id"`
+	UserID   int64  `json:"user_id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateJWT(userID uint, username, role string) (string, error) {
+func GenerateJWT(userID int64, username, role string) (string, error) {
 	secretOnceInit()
 	claims := &Claims{
 		UserID:   userID,

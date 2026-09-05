@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/fir3storm/AwareNow/auth"
 	"github.com/fir3storm/AwareNow/models"
@@ -41,7 +42,7 @@ func (as *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user.LastLogin = models.NowUTC()
+	user.LastLogin = time.Now().UTC()
 	if err := models.PutUser(&user); err != nil {
 		JSONResponse(w, models.Response{Success: false, Message: "Failed to update login time"}, http.StatusInternalServerError)
 		return
