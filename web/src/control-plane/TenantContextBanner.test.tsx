@@ -1,8 +1,5 @@
-/// <reference types="node" />
-
-import assert from 'node:assert/strict';
-import test from 'node:test';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, expect, test } from 'vitest';
 import { TenantContextBanner } from './TenantContextBanner';
 import type { TenantView } from './types';
 
@@ -17,10 +14,12 @@ const provisioningTenant: TenantView = {
 const unsafeTenant: TenantView = { ...provisioningTenant, engineToken: 'not-allowed' };
 void unsafeTenant;
 
-test('renders the tenant display name, slug, and lifecycle', () => {
-  const markup = renderToStaticMarkup(<TenantContextBanner tenant={provisioningTenant} />);
+afterEach(cleanup);
 
-  assert.match(markup, /AwareNow Demo/);
-  assert.match(markup, /awarenow-demo/);
-  assert.match(markup, /Provisioning/);
+test('renders the tenant display name, slug, and lifecycle', () => {
+  render(<TenantContextBanner tenant={provisioningTenant} />);
+
+  expect(screen.getByRole('heading', { name: 'AwareNow Demo' })).toBeInTheDocument();
+  expect(screen.getByText('awarenow-demo')).toBeInTheDocument();
+  expect(screen.getByText('Provisioning')).toBeInTheDocument();
 });
