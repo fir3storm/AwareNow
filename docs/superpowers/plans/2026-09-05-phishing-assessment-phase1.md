@@ -31,6 +31,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-05 — Task 1 (ReportedMessage model) shipped. Deviated from the plan's illustrative test code: this codebase uses gocheck (ModelsSuite/check.C), not testing.T + setupTest/tearDown as the plan assumed — tests were written against the real convention instead.
 - 2026-09-05 — Task 2 (public intake endpoint + ParseEmailContent helper) shipped. Deviated from the plan's illustrative test code again: controllers/ tests use plain testing.T with a real httptest.Server (setupTest/tearDown in controllers_test.go) and real HTTP calls, not gocheck and not direct ServeHTTP calls. While verifying this, also fixed unrelated pre-existing breakage that was blocking it: controllers/api had several compile errors (undefined models.NowUTC, a uint/int64 JWT UserID mismatch, DeliveryConfig/CampaignSMTP field-name mismatches, a csv.Writer.Flush() misuse) and the smtp/campaigns/results tables were missing columns their Go structs already expected (the real migrations for those existed only under db/migrations/, a path this app never actually reads — relocated to db/db_sqlite3/migrations/ and db/db_mysql/migrations/). Also fixed two stale test assertions in controllers/phish_test.go's clickLink helper that predated the tracking-script-injection feature.
 - 2026-09-05 — Task 3 (admin review API) shipped. Same test-convention correction as Tasks 1-2 (real ServeHTTP + Bearer-token requests, not the plan's pseudocode). Also found the built-in "user" role already has PermissionModifyObjects — the permission-denial test needed a user with zero role_permissions rows, not the existing createUnpriviledgedUser helper, to actually hit the 403 path.
+- 2026-09-05 — Task 4 (Reported Messages web UI) shipped. Built this repo's first test harness for a useQuery-based component (a per-test QueryClientProvider wrapper) since none existed. Confirmed the new API client correctly reads raw response bodies rather than copying a pre-existing, out-of-scope bug in web/src/api/templates.ts that assumes a {success,message,data} envelope the real backend doesn't send for that endpoint.
 
 ---
 
@@ -678,11 +679,11 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `GET/POST /api/reported-messages/...` (Task 3). Follow `web/src/api/client.ts`'s existing axios instance and `web/src/api/templates.ts`'s existing call style exactly — read both before writing this task's code.
 - Produces: a route (path TBD to match existing convention, e.g. `/reported-messages`) reachable from the nav.
 
-- [ ] **Step 1: Read the existing patterns first**
+- [x] **Step 1: Read the existing patterns first**
 
 Open `web/src/api/templates.ts`, `web/src/pages/Templates/TemplateList.tsx`, and `web/src/App.tsx` in full. This task's list/detail/approve/reject page should structurally mirror `TemplateList.tsx` (same data-fetching hook style — likely `@tanstack/react-query`, same table component, same loading/error states) rather than introducing a new pattern.
 
-- [ ] **Step 2: Write the API client**
+- [x] **Step 2: Write the API client**
 
 ```ts
 // web/src/api/reportedMessages.ts
@@ -722,7 +723,7 @@ export async function rejectReportedMessage(id: number) {
 
 (Adjust the exact axios wrapper import/usage to whatever `web/src/api/templates.ts` actually does — this is illustrative of the shape, not a guaranteed match to the real client helper's name.)
 
-- [ ] **Step 3: Write the failing component test**
+- [x] **Step 3: Write the failing component test**
 
 ```tsx
 // web/src/pages/ReportedMessages/ReportedMessageList.test.tsx
@@ -755,25 +756,25 @@ describe('ReportedMessageList', () => {
 });
 ```
 
-- [ ] **Step 4: Run test to verify it fails**
+- [x] **Step 4: Run test to verify it fails**
 
 Run: `cd web && npx vitest run src/pages/ReportedMessages/ReportedMessageList.test.tsx`
 Expected: FAIL — module does not exist.
 
-- [ ] **Step 5: Implement the component**
+- [x] **Step 5: Implement the component**
 
 Build `ReportedMessageList.tsx` following `TemplateList.tsx`'s exact structure (query hook, table, loading/error states), with columns: reporter email, subject, reported date, status, and Approve/Reject action buttons that call `approveReportedMessage`/`rejectReportedMessage` and invalidate the list query on success. Do not invent a new table/loading pattern — copy the established one.
 
-- [ ] **Step 6: Wire the route and nav entry**
+- [x] **Step 6: Wire the route and nav entry**
 
 Add the route/nav entry in `web/src/App.tsx` following the exact pattern used for the existing pages there.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `cd web && npx vitest run src/pages/ReportedMessages/ReportedMessageList.test.tsx`
 Expected: PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add web/src/api/reportedMessages.ts web/src/pages/ReportedMessages/ web/src/App.tsx
