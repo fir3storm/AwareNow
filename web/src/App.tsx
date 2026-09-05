@@ -69,6 +69,17 @@ function DashboardWithDevelopmentTenantFixture() {
   );
 }
 
+function DashboardRoute() {
+  // The tenant/awareness fixture banners are development-only aggregate-only
+  // sample data. A production build must never ship them to real operators,
+  // so this route renders the real Dashboard in every non-dev build.
+  if (import.meta.env.DEV) {
+    return <DashboardWithDevelopmentTenantFixture />;
+  }
+
+  return <Dashboard />;
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -81,7 +92,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route index element={<DashboardWithDevelopmentTenantFixture />} />
+        <Route index element={<DashboardRoute />} />
         <Route path="campaigns" element={<CampaignList />} />
         <Route path="campaigns/new" element={<CampaignCreate />} />
         <Route path="campaigns/:id" element={<CampaignResults />} />
