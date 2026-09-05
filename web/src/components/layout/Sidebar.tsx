@@ -8,12 +8,14 @@ import {
   Send,
   Settings,
   Shield,
+  Flag,
 } from 'lucide-react';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/campaigns', icon: Mail, label: 'Campaigns' },
   { to: '/templates', icon: FileText, label: 'Email Templates' },
+  { to: '/reported-messages', icon: Flag, label: 'Reported Messages' },
   { to: '/groups', icon: Users, label: 'Users & Groups' },
   { to: '/pages', icon: Globe, label: 'Landing Pages' },
   { to: '/sending-profiles', icon: Send, label: 'Sending Profiles' },

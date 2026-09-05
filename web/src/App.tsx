@@ -7,6 +7,7 @@ import { CampaignList } from './pages/Campaigns/CampaignList';
 import { CampaignCreate } from './pages/Campaigns/CampaignCreate';
 import { CampaignResults } from './pages/Campaigns/CampaignResults';
 import { TemplateList } from './pages/Templates/TemplateList';
+import { ReportedMessageList } from './pages/ReportedMessages/ReportedMessageList';
 import { GroupList } from './pages/Groups/GroupList';
 import { PageList } from './pages/Pages/PageList';
 import { SMTPList } from './pages/SendingProfiles/SMTPList';
@@ -97,6 +98,7 @@ function AppRoutes() {
         <Route path="campaigns/new" element={<CampaignCreate />} />
         <Route path="campaigns/:id" element={<CampaignResults />} />
         <Route path="templates" element={<TemplateList />} />
+        <Route path="reported-messages" element={<ReportedMessageList />} />
         <Route path="groups" element={<GroupList />} />
         <Route path="pages" element={<PageList />} />
         <Route path="sending-profiles" element={<SMTPList />} />
