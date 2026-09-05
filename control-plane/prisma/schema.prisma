@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum TenantLifecycle {
+  PROVISIONING
+  ACTIVE
+  SUSPENDED
+  FAILED
+}
+
+enum TenantRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum PlatformRole {
+  NONE
+  ADMIN
+}
+
+enum SafeEngineEventType {
+  email_sent
+  email_opened
+  link_clicked
+  landing_page_viewed
+  form_submitted
+  report_submitted
+  training_completed
+  campaign_completed
+}
+
+model Tenant {
+  id          String          @id @default(uuid()) @db.Uuid
+  slug        String          @unique
+  displayName String
+  lifecycle   TenantLifecycle @default(PROVISIONING)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  memberships TenantMembership[]
+  engine      EngineInstance?
+  events      SafeEngineEventRecord[]
+  metrics     MetricAggregate[]
+  auditEntries AuditEntry[]
+}
+
+model TenantMembership {
+  id           String       @id @default(uuid()) @db.Uuid
+  tenantId     String       @db.Uuid
+  // User identities are supplied by the authenticated identity provider.
+  userId       String       @db.Uuid
+  tenantRole   TenantRole   @default(MEMBER)
+  // Platform administrators are explicit and remain auditable per membership.
+  platformRole PlatformRole @default(NONE)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId])
+  @@index([userId])
+}
+
+model EngineInstance {
+  id        String          @id @default(uuid()) @db.Uuid
+  tenantId  String          @unique @db.Uuid
+  lifecycle TenantLifecycle @default(PROVISIONING)
+
+  // Every value below is isolated to this tenant. References identify managed
+  // resources; they never contain a database password, worker secret, or mail credential.
+  engineBaseUrl              String
+  databaseReference          String
+  workerIdentityReference    String
+  deliveryCredentialReference String
+  controlCredentialReference String
+  domainRoute                String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model SafeEngineEventRecord {
+  id              String              @id @default(uuid()) @db.Uuid
+  tenantId        String              @db.Uuid
+  externalEventId String
+  campaignId      String
+  recipientRef    String
+  type            SafeEngineEventType
+  occurredAt      DateTime
+  fieldNames      String[]            @default([])
+  fieldCount      Int?
+  receivedAt      DateTime            @default(now())
+
+  // This record intentionally has no credential-value, form-value, or payload column.
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, externalEventId])
+  @@index([tenantId, occurredAt])
+  @@index([tenantId, campaignId, occurredAt])
+}
+
+model MetricAggregate {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @db.Uuid
+  campaignId  String
+  eventType   SafeEngineEventType
+  bucketStart DateTime
+  bucketEnd   DateTime
+  total       Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, campaignId, eventType, bucketStart, bucketEnd])
+  @@index([tenantId, bucketStart, bucketEnd])
+}
+
+model AuditEntry {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String?  @db.Uuid
+  actorSubjectId String
+  action         String
+  entityType     String
+  entityId       String
+  requestId      String?
+  // Application policy permits only redacted, aggregate-safe metadata here.
+  metadata       Json?
+  occurredAt     DateTime @default(now())
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, occurredAt])
+  @@index([actorSubjectId, occurredAt])
+}
