@@ -14,7 +14,7 @@ import (
 
 // EngineHealth is the safe readiness response for the control plane.
 type EngineHealth struct {
-	Status  string `json:"status"`
+	Ready   bool   `json:"ready"`
 	Version string `json:"version"`
 }
 
@@ -27,6 +27,10 @@ type SafeCampaignSummary struct {
 	CreatedAt   time.Time `json:"created_at"`
 	LaunchDate  time.Time `json:"launch_date"`
 	ResultCount int64     `json:"result_count"`
+}
+
+type campaignListResponse struct {
+	Campaigns []SafeCampaignSummary `json:"campaigns"`
 }
 
 // CampaignReader returns only safe campaign summaries.
@@ -55,14 +59,14 @@ func NewHandler(token string, campaignReader CampaignReader, campaignStopper Cam
 			if version == "" {
 				version = "unknown"
 			}
-			writeJSON(w, http.StatusOK, EngineHealth{Status: "ready", Version: version})
+			writeJSON(w, http.StatusOK, EngineHealth{Ready: true, Version: version})
 		case r.Method == http.MethodGet && r.URL.Path == "/campaigns":
 			campaigns, err := campaignReader.ListSafeCampaigns()
 			if err != nil {
 				http.Error(w, "internal server error", http.StatusInternalServerError)
 				return
 			}
-			writeJSON(w, http.StatusOK, campaigns)
+			writeJSON(w, http.StatusOK, campaignListResponse{Campaigns: campaigns})
 		case r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/campaigns/"):
 			stopCampaign(w, r.URL.Path, campaignStopper)
 		default:

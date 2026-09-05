@@ -65,14 +65,17 @@ func TestHandlerHealthReportsReadiness(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
 	}
-	var health map[string]string
+	var health struct {
+		Ready   bool   `json:"ready"`
+		Version string `json:"version"`
+	}
 	if err := json.NewDecoder(response.Body).Decode(&health); err != nil {
 		t.Fatalf("decode health response: %v", err)
 	}
-	if health["status"] != "ready" {
-		t.Fatalf("expected ready status, got %q", health["status"])
+	if !health.Ready {
+		t.Fatal("expected ready health response")
 	}
-	if _, ok := health["version"]; !ok {
+	if health.Version == "" {
 		t.Fatal("expected version in health response")
 	}
 }
@@ -94,14 +97,16 @@ func TestHandlerCampaignsReturnsOnlySafeFields(t *testing.T) {
 	if response.Code != http.StatusOK {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, response.Code)
 	}
-	var campaigns []map[string]interface{}
-	if err := json.NewDecoder(response.Body).Decode(&campaigns); err != nil {
+	var body struct {
+		Campaigns []map[string]interface{} `json:"campaigns"`
+	}
+	if err := json.NewDecoder(response.Body).Decode(&body); err != nil {
 		t.Fatalf("decode campaign response: %v", err)
 	}
-	if len(campaigns) != 1 {
-		t.Fatalf("expected one campaign, got %d", len(campaigns))
+	if len(body.Campaigns) != 1 {
+		t.Fatalf("expected one campaign, got %d", len(body.Campaigns))
 	}
-	campaign := campaigns[0]
+	campaign := body.Campaigns[0]
 	expected := map[string]interface{}{
 		"id":           float64(42),
 		"name":         "Autumn awareness",
