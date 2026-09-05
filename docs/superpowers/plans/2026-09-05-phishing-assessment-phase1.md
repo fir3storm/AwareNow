@@ -30,6 +30,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-05 — Plan created. No tasks shipped yet.
 - 2026-09-05 — Task 1 (ReportedMessage model) shipped. Deviated from the plan's illustrative test code: this codebase uses gocheck (ModelsSuite/check.C), not testing.T + setupTest/tearDown as the plan assumed — tests were written against the real convention instead.
 - 2026-09-05 — Task 2 (public intake endpoint + ParseEmailContent helper) shipped. Deviated from the plan's illustrative test code again: controllers/ tests use plain testing.T with a real httptest.Server (setupTest/tearDown in controllers_test.go) and real HTTP calls, not gocheck and not direct ServeHTTP calls. While verifying this, also fixed unrelated pre-existing breakage that was blocking it: controllers/api had several compile errors (undefined models.NowUTC, a uint/int64 JWT UserID mismatch, DeliveryConfig/CampaignSMTP field-name mismatches, a csv.Writer.Flush() misuse) and the smtp/campaigns/results tables were missing columns their Go structs already expected (the real migrations for those existed only under db/migrations/, a path this app never actually reads — relocated to db/db_sqlite3/migrations/ and db/db_mysql/migrations/). Also fixed two stale test assertions in controllers/phish_test.go's clickLink helper that predated the tracking-script-injection feature.
+- 2026-09-05 — Task 3 (admin review API) shipped. Same test-convention correction as Tasks 1-2 (real ServeHTTP + Bearer-token requests, not the plan's pseudocode). Also found the built-in "user" role already has PermissionModifyObjects — the permission-denial test needed a user with zero role_permissions rows, not the existing createUnpriviledgedUser helper, to actually hit the 403 path.
 
 ---
 
@@ -427,7 +428,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `models.GetReportedMessages`, `models.GetReportedMessageByID`, `models.UpdateReportedMessageStatus` (Task 1); `api.ParseEmailContent` (Task 2); existing `models.PostTemplate` / template creation function (confirm exact signature in `models/template.go` before wiring — it takes a `*models.Template` and a user ID in every other handler in `controllers/api/template.go`, follow that exact pattern).
 - Produces: `GET /api/reported-messages/`, `GET /api/reported-messages/{id:[0-9]+}`, `POST /api/reported-messages/{id:[0-9]+}/approve`, `POST /api/reported-messages/{id:[0-9]+}/reject` — all behind the existing `mid.RequireAPIKey` + `mid.RequirePermission(models.PermissionModifyObjects)` used elsewhere in `server.go`.
 
-- [ ] **Step 1: Write the failing test for list + approve**
+- [x] **Step 1: Write the failing test for list + approve**
 
 ```go
 // controllers/api/reported_message_test.go
@@ -477,12 +478,12 @@ func TestReportedMessagesApprove(t *testing.T) {
 
 Adjust the request-construction/auth boilerplate to match whatever `controllers/api/api_test.go` already sets up for other authenticated-endpoint tests (there is an existing pattern there — do not invent a second one).
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./controllers/api/ -run TestReportedMessagesApprove -v`
 Expected: FAIL — route not registered / 404.
 
-- [ ] **Step 3: Implement the handlers**
+- [x] **Step 3: Implement the handlers**
 
 ```go
 // controllers/api/reported_message.go
@@ -638,7 +639,7 @@ func rawEmailFromParts(subject, text, html string) string {
 
 **Before writing this file for real:** open `models/template.go` and `controllers/api/template.go` to confirm the exact `Template` struct field names and the exact template-creation function signature (`PostTemplate` is a guess based on the `PostCampaign`/`PostCampaignSMTP` naming convention seen elsewhere in `models/`) — adjust the calls above to match what's actually there rather than what's assumed here.
 
-- [ ] **Step 4: Register routes**
+- [x] **Step 4: Register routes**
 
 In `controllers/api/server.go`, inside `registerRoutes()`, add alongside the other `RequirePermission` routes:
 
@@ -649,12 +650,12 @@ router.HandleFunc("/reported-messages/{id:[0-9]+}/approve", mid.Use(as.ReportedM
 router.HandleFunc("/reported-messages/{id:[0-9]+}/reject", mid.Use(as.ReportedMessageReject, mid.RequirePermission(models.PermissionModifyObjects))).Methods("POST")
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test ./controllers/api/ -run TestReportedMessages -v`
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add controllers/api/reported_message.go controllers/api/server.go controllers/api/reported_message_test.go
