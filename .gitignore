@@ -59,3 +59,8 @@ Thumbs.db
 *.exe
 gophish.db*
 gophish
+
+# Local secrets/config (never commit real .env files)
+.env
+.env.*
+!.env.example
