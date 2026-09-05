@@ -29,6 +29,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 
 - 2026-09-05 — Plan created. No tasks shipped yet.
 - 2026-09-05 — Task 1 (ReportedMessage model) shipped. Deviated from the plan's illustrative test code: this codebase uses gocheck (ModelsSuite/check.C), not testing.T + setupTest/tearDown as the plan assumed — tests were written against the real convention instead.
+- 2026-09-05 — Task 2 (public intake endpoint + ParseEmailContent helper) shipped. Deviated from the plan's illustrative test code again: controllers/ tests use plain testing.T with a real httptest.Server (setupTest/tearDown in controllers_test.go) and real HTTP calls, not gocheck and not direct ServeHTTP calls. While verifying this, also fixed unrelated pre-existing breakage that was blocking it: controllers/api had several compile errors (undefined models.NowUTC, a uint/int64 JWT UserID mismatch, DeliveryConfig/CampaignSMTP field-name mismatches, a csv.Writer.Flush() misuse) and the smtp/campaigns/results tables were missing columns their Go structs already expected (the real migrations for those existed only under db/migrations/, a path this app never actually reads — relocated to db/db_sqlite3/migrations/ and db/db_mysql/migrations/). Also fixed two stale test assertions in controllers/phish_test.go's clickLink helper that predated the tracking-script-injection feature.
 
 ---
 
@@ -242,7 +243,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `models.CreateReportedMessage` (Task 1).
 - Produces: `func ParseEmailContent(content string, convertLinks bool) (subject, text, html string, err error)` in package `api` (moved out of the `ImportEmail` handler body so Task 3 can reuse it) — **exported** so `controllers` can call `api.ParseEmailContent`. `POST /report-unknown` on `PhishingServer`, body `{"reporter_email": string, "subject": string, "body_text": string, "body_html": string}`, always responds `204 No Content` on success (mirrors `ReportHandler`'s existing style) or `400`/`429` on failure.
 
-- [ ] **Step 1: Extract the shared parser (refactor, no behavior change)**
+- [x] **Step 1: Extract the shared parser (refactor, no behavior change)**
 
 In `controllers/api/import.go`, pull the body of `ImportEmail` (from `email.NewEmailFromReader` through the `ConvertLinks` goquery rewrite) into:
 
@@ -301,12 +302,12 @@ func (as *Server) ImportEmail(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-- [ ] **Step 2: Run existing import tests to confirm no regression**
+- [x] **Step 2: Run existing import tests to confirm no regression**
 
 Run: `go test ./controllers/api/ -run TestImportEmail -v`
 Expected: PASS (behavior unchanged, only refactored)
 
-- [ ] **Step 3: Add the rate limiter field and route to `PhishingServer`**
+- [x] **Step 3: Add the rate limiter field and route to `PhishingServer`**
 
 In `controllers/phish.go`, add a limiter field and wire the new route:
 
@@ -331,7 +332,7 @@ router.HandleFunc("/report-unknown", mid.Use(ps.ReportUnknownHandler, ps.limiter
 
 Add imports: `"github.com/fir3storm/AwareNow/middleware/ratelimit"` and confirm `mid` (already imported as `"github.com/fir3storm/AwareNow/middleware"`) covers `mid.Use`.
 
-- [ ] **Step 4: Write the failing test**
+- [x] **Step 4: Write the failing test**
 
 ```go
 // in controllers/phish_test.go — follow the existing suite's setup pattern
@@ -355,12 +356,12 @@ func (s *ControllersSuite) TestReportUnknownHandler(c *check.C) {
 
 (Match this to whatever the existing `ControllersSuite` fixture/handler-access pattern is in `controllers/phish_test.go` and `controllers/controllers_test.go` — adjust field/method names to what's actually there rather than inventing new suite plumbing.)
 
-- [ ] **Step 5: Run test to verify it fails**
+- [x] **Step 5: Run test to verify it fails**
 
 Run: `go test ./controllers/ -run TestReportUnknownHandler -v`
 Expected: FAIL — `ReportUnknownHandler` undefined.
 
-- [ ] **Step 6: Implement `ReportUnknownHandler`**
+- [x] **Step 6: Implement `ReportUnknownHandler`**
 
 ```go
 // ReportUnknownHandler accepts a report of a real, non-campaign suspicious
@@ -399,12 +400,12 @@ func (ps *PhishingServer) ReportUnknownHandler(w http.ResponseWriter, r *http.Re
 
 Add `"encoding/json"` to `controllers/phish.go`'s imports if not already present (it is not, per the file as read for this plan).
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `go test ./controllers/ -run TestReportUnknownHandler -v`
 Expected: PASS
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add controllers/phish.go controllers/api/import.go controllers/phish_test.go
