@@ -13,7 +13,7 @@ export function createDevelopmentDependencies(): ControlPlaneDependencies {
       record: async (event) => event,
     },
     analyticsRepository: {
-      getOverview: async () => ({ sent: 0, opened: 0, clicked: 0, reported: 0, trainingCompleted: 0 }),
+      listSafeEvents: async () => [],
     },
   };
 }

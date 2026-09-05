@@ -1,5 +1,6 @@
 import express, { type Request, type Response } from 'express';
 
+import { getTenantAwarenessOverview, type SafeEventAnalyticsRepository } from './analytics/overview.js';
 import { recordSafeEvent, type SafeEventRepository } from './events/eventService.js';
 import type { TenantPrincipal } from './tenancy/principal.js';
 import { requireTenantScope } from './tenancy/tenantScope.js';
@@ -13,19 +14,11 @@ export type TenantView = {
   lifecycle: TenantLifecycle;
 };
 
-export type AwarenessOverview = {
-  sent: number;
-  opened: number;
-  clicked: number;
-  reported: number;
-  trainingCompleted: number;
-};
-
 export type ControlPlaneDependencies = {
   principalForRequest: (request: Request) => TenantPrincipal | undefined;
   tenantRepository: { findById: (tenantId: string) => Promise<TenantView | null> };
   safeEventRepository: SafeEventRepository;
-  analyticsRepository: { getOverview: (tenantId: string) => Promise<AwarenessOverview> };
+  analyticsRepository: SafeEventAnalyticsRepository;
 };
 
 export function createApp(dependencies: ControlPlaneDependencies) {
@@ -59,7 +52,7 @@ export function createApp(dependencies: ControlPlaneDependencies) {
   app.get('/api/v1/analytics/overview', async (request, response) => {
     try {
       const tenantId = requireTenantId(dependencies.principalForRequest(request));
-      response.status(200).json(await dependencies.analyticsRepository.getOverview(tenantId));
+      response.status(200).json(await getTenantAwarenessOverview(tenantId, dependencies.analyticsRepository));
     } catch (error) {
       sendRequestError(response, error);
     }

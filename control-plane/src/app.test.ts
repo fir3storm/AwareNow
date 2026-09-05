@@ -88,15 +88,30 @@ describe('control-plane app', () => {
   });
 
   it('returns aggregates for only the authenticated tenant', async () => {
-    const response = await request(createApp(testDependencies())).get('/api/v1/analytics/overview');
+    const response = await request(
+      createApp(
+        testDependencies({
+          analyticsRepository: {
+            listSafeEvents: async () => [
+              analyticsEvent('email_sent'),
+              analyticsEvent('email_opened'),
+              analyticsEvent('link_clicked'),
+              analyticsEvent('report_submitted'),
+              analyticsEvent('training_completed'),
+              { ...analyticsEvent('link_clicked'), tenantId: 'tenant_other' },
+            ],
+          },
+        }),
+      ),
+    ).get('/api/v1/analytics/overview');
 
     expect(response.status).toBe(200);
     expect(response.body).toEqual({
-      sent: 100,
-      opened: 60,
-      clicked: 12,
-      reported: 7,
-      trainingCompleted: 20,
+      sent: 1,
+      opened: 1,
+      clicked: 1,
+      reported: 1,
+      trainingCompleted: 1,
     });
   });
 });
@@ -110,15 +125,7 @@ function testDependencies(overrides: Partial<ControlPlaneDependencies> = {}): Co
     }),
     tenantRepository: { findById: async () => tenant },
     safeEventRepository: repositoryRecording([]),
-    analyticsRepository: {
-      getOverview: async () => ({
-        sent: 100,
-        opened: 60,
-        clicked: 12,
-        reported: 7,
-        trainingCompleted: 20,
-      }),
-    },
+    analyticsRepository: { listSafeEvents: async () => [] },
   };
 
   return { ...dependencies, ...overrides };
@@ -133,5 +140,16 @@ function repositoryRecording(events: SafeEngineEvent[]): SafeEventRepository {
       events.push(event);
       return event;
     },
+  };
+}
+
+function analyticsEvent(type: SafeEngineEvent['type']): SafeEngineEvent {
+  return {
+    eventId: `analytics_${type}`,
+    tenantId: 'tenant_acme',
+    campaignId: 'campaign_001',
+    recipientRef: 'recipient_001',
+    type,
+    occurredAt: '2026-09-05T12:00:00.000Z',
   };
 }
