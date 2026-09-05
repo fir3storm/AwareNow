@@ -1,15 +1,10 @@
 import express, { type Request, type Response } from 'express';
 
-import { parseSafeEngineEvent, type SafeEngineEvent } from './security/safeEvent.js';
+import { recordSafeEvent, type SafeEventRepository } from './events/eventService.js';
+import type { TenantPrincipal } from './tenancy/principal.js';
+import { requireTenantScope } from './tenancy/tenantScope.js';
 
 export type TenantLifecycle = 'PROVISIONING' | 'ACTIVE' | 'SUSPENDED' | 'FAILED';
-
-export type TenantPrincipal = {
-  subjectId: string;
-  role: 'PLATFORM_ADMIN' | 'TENANT_ADMIN' | 'TENANT_MEMBER' | 'ENGINE';
-  tenantId?: string;
-  engineTenantId?: string;
-};
 
 export type TenantView = {
   id: string;
@@ -29,7 +24,7 @@ export type AwarenessOverview = {
 export type ControlPlaneDependencies = {
   principalForRequest: (request: Request) => TenantPrincipal | undefined;
   tenantRepository: { findById: (tenantId: string) => Promise<TenantView | null> };
-  safeEventRepository: { record: (event: SafeEngineEvent) => Promise<unknown> };
+  safeEventRepository: SafeEventRepository;
   analyticsRepository: { getOverview: (tenantId: string) => Promise<AwarenessOverview> };
 };
 
@@ -53,9 +48,8 @@ export function createApp(dependencies: ControlPlaneDependencies) {
 
   app.post('/api/v1/events/engine', async (request, response) => {
     try {
-      const tenantId = requireEngineTenantId(dependencies.principalForRequest(request));
-      const event = parseSafeEngineEvent(request.body, tenantId);
-      await dependencies.safeEventRepository.record(event);
+      const principal = requireEnginePrincipal(dependencies.principalForRequest(request));
+      const event = await recordSafeEvent(request.body, principal, dependencies.safeEventRepository);
       response.status(202).json({ accepted: true, eventId: event.eventId });
     } catch (error) {
       sendRequestError(response, error);
@@ -78,20 +72,21 @@ function requireTenantId(principal: TenantPrincipal | undefined): string {
   if (principal === undefined) {
     throw new RequestScopeError(401, 'Authentication is required.');
   }
-  if (principal.tenantId === undefined || principal.tenantId.length === 0) {
+  try {
+    return requireTenantScope(principal);
+  } catch {
     throw new RequestScopeError(403, 'A tenant scope is required.');
   }
-  return principal.tenantId;
 }
 
-function requireEngineTenantId(principal: TenantPrincipal | undefined): string {
-  if (principal === undefined || principal.role !== 'ENGINE') {
+function requireEnginePrincipal(principal: TenantPrincipal | undefined): TenantPrincipal {
+  if (principal === undefined || principal.role !== 'tenant_engine') {
     throw new RequestScopeError(401, 'Engine authentication is required.');
   }
   if (principal.engineTenantId === undefined || principal.engineTenantId.length === 0) {
     throw new RequestScopeError(403, 'An engine tenant scope is required.');
   }
-  return principal.engineTenantId;
+  return principal;
 }
 
 function sendRequestError(response: Response, error: unknown) {

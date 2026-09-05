@@ -29,6 +29,34 @@ jobs:
     - name: Build frontend
       run: npm run build
 
+  control-plane:
+    name: Control plane
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: control-plane
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Set up Node 24
+      uses: actions/setup-node@v4
+      with:
+        node-version: 24
+
+    - name: Install control-plane dependencies
+      run: npm ci
+
+    - name: Test control plane
+      run: npm run test:run
+
+    - name: Typecheck control plane
+      run: npm run typecheck
+
+    - name: Build control plane
+      run: npm run build
+
   build:
     name: Build
     runs-on: ubuntu-latest

@@ -161,6 +161,40 @@
   }
 }
 
+.control-plane-development-fixture {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem;
+  border: 1px dashed rgb(99 102 241);
+  border-radius: 0.75rem;
+  background: rgb(238 242 255);
+  color: rgb(49 46 129);
+  font-size: 0.875rem;
+}
+
+.control-plane-development-fixture span {
+  max-width: 42rem;
+}
+
+.control-plane-dashboard-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(18rem, 1fr);
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .control-plane-development-fixture {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .control-plane-dashboard-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .ticks {
   position: relative;
   width: 100%;

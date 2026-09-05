@@ -12,6 +12,26 @@ import { PageList } from './pages/Pages/PageList';
 import { SMTPList } from './pages/SendingProfiles/SMTPList';
 import { Settings } from './pages/Settings/Settings';
 import { useAuthStore } from './store/authStore';
+import { AwarenessOverview } from './control-plane/AwarenessOverview';
+import { ProvisioningStatus } from './control-plane/ProvisioningStatus';
+import { TenantContextBanner } from './control-plane/TenantContextBanner';
+import type { AwarenessMetrics, TenantView } from './control-plane/types';
+import './App.css';
+
+const developmentTenantFixture: TenantView = {
+  id: 'development-fixture-only',
+  displayName: 'Development workspace',
+  slug: 'development-fixture',
+  lifecycle: 'PROVISIONING',
+};
+
+const developmentAwarenessMetrics: AwarenessMetrics = {
+  sent: 0,
+  opened: 0,
+  clicked: 0,
+  reported: 0,
+  trainingCompleted: 0,
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,6 +52,23 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return isAuthenticated ? <Navigate to="/" replace /> : <>{children}</>;
 }
 
+function DashboardWithDevelopmentTenantFixture() {
+  return (
+    <div className="space-y-6">
+      <aside className="control-plane-development-fixture" aria-label="Development fixture data">
+        <strong>Development fixture</strong>
+        <span>Sample aggregate-only values. No live tenant, recipient, or campaign data is shown.</span>
+      </aside>
+      <div className="control-plane-dashboard-summary">
+        <TenantContextBanner tenant={developmentTenantFixture} />
+        <ProvisioningStatus tenant={developmentTenantFixture} />
+      </div>
+      <AwarenessOverview metrics={developmentAwarenessMetrics} />
+      <Dashboard />
+    </div>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -44,7 +81,7 @@ function AppRoutes() {
           </PrivateRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route index element={<DashboardWithDevelopmentTenantFixture />} />
         <Route path="campaigns" element={<CampaignList />} />
         <Route path="campaigns/new" element={<CampaignCreate />} />
         <Route path="campaigns/:id" element={<CampaignResults />} />

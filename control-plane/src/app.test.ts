@@ -1,8 +1,10 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 
-import { createApp, type ControlPlaneDependencies, type TenantPrincipal } from './app.js';
+import { createApp, type ControlPlaneDependencies } from './app.js';
+import type { SafeEventRepository } from './events/eventService.js';
 import type { SafeEngineEvent } from './security/safeEvent.js';
+import type { TenantPrincipal } from './tenancy/principal.js';
 
 const tenant = {
   id: 'tenant_acme',
@@ -27,12 +29,12 @@ describe('control-plane app', () => {
   });
 
   it('rejects engine events containing a password before storage', async () => {
-    const events: unknown[] = [];
+    const events: SafeEngineEvent[] = [];
     const response = await request(
       createApp(
         testDependencies({
-          principalForRequest: () => ({ subjectId: 'engine_001', role: 'ENGINE', engineTenantId: 'tenant_acme' }),
-          safeEventRepository: { record: async (event) => events.push(event) },
+          principalForRequest: () => ({ subjectId: 'engine_001', role: 'tenant_engine', engineTenantId: 'tenant_acme' }),
+          safeEventRepository: repositoryRecording(events),
         }),
       ),
     )
@@ -49,6 +51,40 @@ describe('control-plane app', () => {
 
     expect(response.status).toBe(400);
     expect(events).toEqual([]);
+  });
+
+  it('records a valid engine event through the tenant-scoped event service', async () => {
+    const events: SafeEngineEvent[] = [];
+    const response = await request(
+      createApp(
+        testDependencies({
+          principalForRequest: () => ({ subjectId: 'engine_001', role: 'tenant_engine', engineTenantId: 'tenant_acme' }),
+          safeEventRepository: repositoryRecording(events),
+        }),
+      ),
+    )
+      .post('/api/v1/events/engine')
+      .send({
+        eventId: 'evt_002',
+        tenantId: 'tenant_acme',
+        campaignId: 'campaign_001',
+        recipientRef: 'recipient_001',
+        type: 'link_clicked',
+        occurredAt: '2026-09-05T12:00:00.000Z',
+      });
+
+    expect(response.status).toBe(202);
+    expect(response.body).toEqual({ accepted: true, eventId: 'evt_002' });
+    expect(events).toEqual([
+      {
+        eventId: 'evt_002',
+        tenantId: 'tenant_acme',
+        campaignId: 'campaign_001',
+        recipientRef: 'recipient_001',
+        type: 'link_clicked',
+        occurredAt: '2026-09-05T12:00:00.000Z',
+      },
+    ]);
   });
 
   it('returns aggregates for only the authenticated tenant', async () => {
@@ -69,11 +105,11 @@ function testDependencies(overrides: Partial<ControlPlaneDependencies> = {}): Co
   const dependencies: ControlPlaneDependencies = {
     principalForRequest: (): TenantPrincipal => ({
       subjectId: 'user_001',
-      role: 'TENANT_MEMBER',
+      role: 'tenant_member',
       tenantId: 'tenant_acme',
     }),
     tenantRepository: { findById: async () => tenant },
-    safeEventRepository: { record: async () => ({ inserted: true }) },
+    safeEventRepository: repositoryRecording([]),
     analyticsRepository: {
       getOverview: async () => ({
         sent: 100,
@@ -86,4 +122,16 @@ function testDependencies(overrides: Partial<ControlPlaneDependencies> = {}): Co
   };
 
   return { ...dependencies, ...overrides };
+}
+
+function repositoryRecording(events: SafeEngineEvent[]): SafeEventRepository {
+  return {
+    findByTenantAndExternalEventId: async (tenantId, eventId) => (
+      events.find((event) => event.tenantId === tenantId && event.eventId === eventId) ?? null
+    ),
+    record: async (event) => {
+      events.push(event);
+      return event;
+    },
+  };
 }
