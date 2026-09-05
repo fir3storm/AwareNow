@@ -1,0 +1,48 @@
+name: awarenow-${AWARENOW_TENANT_SLUG}
+
+# Reference topology only. Resolve every *REF value through an approved secret
+# manager before use; this file is not a deployment command.
+services:
+  engine:
+    image: ghcr.io/fir3storm/awarenow-engine:replace-with-approved-version
+    restart: unless-stopped
+    environment:
+      AWARENOW_TENANT_SLUG: ${AWARENOW_TENANT_SLUG:?set a tenant slug}
+      AWARENOW_CONTROL_TOKEN: ${AWARENOW_CONTROL_TOKEN:?set a control-token reference}
+      DATABASE_URL: ${ENGINE_DATABASE_URL:?set an engine database URL reference}
+      DELIVERY_CREDENTIAL_REF: ${DELIVERY_CREDENTIAL_REF:?set a delivery credential reference}
+      CAMPAIGN_DOMAIN: ${CAMPAIGN_DOMAIN:?set a tenant campaign domain}
+    expose:
+      - "3333"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - tenant
+
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: awarenow_engine
+      POSTGRES_USER: awarenow_engine
+      # This is a reference identifier, never a literal password in source.
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD_REF:?set a database password reference}
+    volumes:
+      - engine-database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U awarenow_engine -d awarenow_engine"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tenant
+
+networks:
+  tenant:
+    name: awarenow-${AWARENOW_TENANT_SLUG}
+    internal: true
+
+volumes:
+  engine-database:
+    name: awarenow-${AWARENOW_TENANT_SLUG}-engine-database
