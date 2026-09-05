@@ -61,3 +61,14 @@ jobs:
 
     - name: Build
       run: npm run build
+
+  branding-audit:
+    name: Branding audit
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Check for legacy browser-facing branding
+      run: bash scripts/check-ui-branding.sh
