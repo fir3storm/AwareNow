@@ -28,6 +28,7 @@
 _Append one line per shipped task. Do not edit history above this point — add new lines below._
 
 - 2026-09-05 — Plan created. No tasks shipped yet.
+- 2026-09-05 — Task 1 (ReportedMessage model) shipped. Deviated from the plan's illustrative test code: this codebase uses gocheck (ModelsSuite/check.C), not testing.T + setupTest/tearDown as the plan assumed — tests were written against the real convention instead.
 
 ---
 
@@ -41,7 +42,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - Produces: `models.ReportedMessage` struct; `models.CreateReportedMessage(rm *ReportedMessage) error`; `models.GetReportedMessages(status string) ([]ReportedMessage, error)`; `models.GetReportedMessageByID(id int64) (ReportedMessage, error)`; `models.ErrReportedMessageNotFound`; status constants `models.ReportedMessageStatusPending`, `models.ReportedMessageStatusApproved`, `models.ReportedMessageStatusRejected`.
 - Consumes: nothing (foundational task).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```go
 // models/reported_message_test.go
@@ -99,12 +100,12 @@ func TestGetReportedMessageByIDNotFound(t *testing.T) {
 
 (`setupTest`/`tearDown` are the existing per-test sqlite fixtures already used throughout `models/*_test.go` — check `models/models_test.go` for the exact names in use if these differ.)
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `go test ./models/ -run TestCreateAndGetReportedMessage -v`
 Expected: FAIL — `ReportedMessage`, `CreateReportedMessage`, etc. undefined.
 
-- [ ] **Step 3: Write the implementation**
+- [x] **Step 3: Write the implementation**
 
 ```go
 // models/reported_message.go
@@ -209,17 +210,17 @@ func UpdateReportedMessageStatus(id int64, status string, reviewedBy string, tem
 }
 ```
 
-- [ ] **Step 4: Register the new table with gorm's auto-migration**
+- [x] **Step 4: Register the new table with gorm's auto-migration**
 
 Find where existing models (e.g. `DeviceFingerprint`, `BehaviorEvent` from `models/enhanced_tracking.go`) are passed to `db.AutoMigrate(...)` inside `models/models.go`'s `Setup`/migration function, and add `&ReportedMessage{}` to that list.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `go test ./models/ -run TestReportedMessage -v` (or the full `TestCreateAndGetReportedMessage` / `TestGetReportedMessageByIDNotFound` names)
 Expected: PASS
 Note: per Global Constraints, this may not build locally on a machine without gcc (cgo sqlite3 dependency) — if so, verify via `go vet ./models/` locally and let CI run the actual test.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add models/reported_message.go models/reported_message_test.go models/models.go
