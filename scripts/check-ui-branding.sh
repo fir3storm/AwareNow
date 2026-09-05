@@ -18,8 +18,11 @@ if command -v rg >/dev/null 2>&1; then
 
   # Scan all first-party server-rendered HTML, excluding vendor packs. The
   # legacy asset filenames below are upstream compatibility paths, not UI text.
-  if rg -n -i "$PATTERN" "$REPO_ROOT/templates" -g '*.html' -g '!vendor/**' |
-    rg -v '/css/dist/gophish\.css|/js/dist/app/gophish\.min\.js'; then
+  # NOTE: the vendor exclude glob must be rooted with '**/' -- ripgrep anchors
+  # an unrooted 'vendor/**' glob against the full path it was invoked with
+  # (which already includes the "templates/" segment), so it never matches.
+  if rg -n -i "$PATTERN" "$REPO_ROOT/templates" -g '*.html' -g '!**/vendor/**' |
+    rg -v 'css/dist/gophish\.css|js/dist/app/gophish\.min\.js'; then
     found=1
   fi
 else

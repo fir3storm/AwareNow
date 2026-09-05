@@ -4,6 +4,37 @@ on:
   - push
 jobs:
 
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goVer: [1.21, 1.22, 1.23]
+
+    steps:
+    - name: Set up Go ${{ matrix.goVer }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ matrix.goVer }}
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v4
+
+    - name: Get dependencies
+      run: |
+        go get -v -t -d ./...
+        go get gopkg.in/check.v1
+
+    - name: Build
+      run: go build -v .
+
+    - name: Format
+      run: diff -u <(echo -n) <(gofmt -d .)
+
+    - name: Test
+      run: go test ./...
+
   frontend:
     name: Frontend
     runs-on: ubuntu-latest
@@ -15,18 +46,20 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v4
 
-    - name: Set up Node 24
+    - name: Set up Node
       uses: actions/setup-node@v4
       with:
         node-version: 24
+        cache: npm
+        cache-dependency-path: web/package-lock.json
 
-    - name: Install frontend dependencies
+    - name: Install dependencies
       run: npm ci
 
-    - name: Lint frontend
+    - name: Lint
       run: npm run lint
 
-    - name: Build frontend
+    - name: Build
       run: npm run build
 
   control-plane:
@@ -57,33 +90,13 @@ jobs:
     - name: Build control plane
       run: npm run build
 
-  build:
-    name: Build
+  branding-audit:
+    name: Branding audit
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goVer: [1.21, 1.22, 1.23]
 
     steps:
-    - name: Set up Go ${{ matrix.goVer }}
-      uses: actions/setup-go@v5
-      with:
-        go-version: ${{ matrix.goVer }}
-      id: go
-
-    - name: Check out code into the Go module directory
+    - name: Check out code
       uses: actions/checkout@v4
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-        go get gopkg.in/check.v1
-
-    - name: Build
-      run: go build -v .
-    
-    - name: Format
-      run: diff -u <(echo -n) <(gofmt -d .)
-    
-    - name: Test
-      run: go test ./...
+    - name: Check for legacy browser-facing branding
+      run: bash scripts/check-ui-branding.sh
