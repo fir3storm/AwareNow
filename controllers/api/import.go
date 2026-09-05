@@ -49,6 +49,50 @@ func (as *Server) ImportGroup(w http.ResponseWriter, r *http.Request) {
 	JSONResponse(w, ts, http.StatusOK)
 }
 
+// htmlRenderError marks a failure that occurred while re-serializing a
+// goquery document back to HTML, as opposed to a failure parsing it. It
+// lets callers preserve a distinct status code for that failure mode, as
+// ImportEmail did before this logic was extracted into ParseEmailContent.
+type htmlRenderError struct {
+	err error
+}
+
+func (e *htmlRenderError) Error() string { return e.err.Error() }
+func (e *htmlRenderError) Unwrap() error { return e.err }
+
+// ParseEmailContent parses a raw RFC 822 email into its subject, text, and
+// HTML parts. When convertLinks is true, all <a href> targets in the HTML
+// body are rewritten to "{{.URL}}" so the result is ready to use as a
+// phishing template.
+func ParseEmailContent(content string, convertLinks bool) (subject, text, html string, err error) {
+	e, perr := email.NewEmailFromReader(strings.NewReader(content))
+	if perr != nil {
+		// This failure is logged, not returned: parsing continues below
+		// with whatever (possibly empty) *email.Email NewEmailFromReader
+		// still returned, matching the pre-refactor ImportEmail behavior.
+		log.Error(perr)
+	}
+	htmlBytes := e.HTML
+	// If the caller wants to convert links to point to
+	// the landing page, let's make it happen by changing up
+	// the HTML body.
+	if convertLinks {
+		d, derr := goquery.NewDocumentFromReader(bytes.NewReader(htmlBytes))
+		if derr != nil {
+			return "", "", "", derr
+		}
+		d.Find("a").Each(func(i int, a *goquery.Selection) {
+			a.SetAttr("href", "{{.URL}}")
+		})
+		h, herr := d.Html()
+		if herr != nil {
+			return "", "", "", &htmlRenderError{herr}
+		}
+		htmlBytes = []byte(h)
+	}
+	return e.Subject, string(e.Text), string(htmlBytes), nil
+}
+
 // ImportEmail allows for the importing of email.
 // Returns a Message object
 func (as *Server) ImportEmail(w http.ResponseWriter, r *http.Request) {
@@ -65,33 +109,21 @@ func (as *Server) ImportEmail(w http.ResponseWriter, r *http.Request) {
 		JSONResponse(w, models.Response{Success: false, Message: "Error decoding JSON Request"}, http.StatusBadRequest)
 		return
 	}
-	e, err := email.NewEmailFromReader(strings.NewReader(ir.Content))
+	subject, text, html, err := ParseEmailContent(ir.Content, ir.ConvertLinks)
 	if err != nil {
-		log.Error(err)
-	}
-	// If the user wants to convert links to point to
-	// the landing page, let's make it happen by changing up
-	// e.HTML
-	if ir.ConvertLinks {
-		d, err := goquery.NewDocumentFromReader(bytes.NewReader(e.HTML))
-		if err != nil {
-			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
-			return
+		status := http.StatusBadRequest
+		var hre *htmlRenderError
+		if errors.As(err, &hre) {
+			status = http.StatusInternalServerError
+			err = hre.err
 		}
-		d.Find("a").Each(func(i int, a *goquery.Selection) {
-			a.SetAttr("href", "{{.URL}}")
-		})
-		h, err := d.Html()
-		if err != nil {
-			JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusInternalServerError)
-			return
-		}
-		e.HTML = []byte(h)
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, status)
+		return
 	}
 	er := emailResponse{
-		Subject: e.Subject,
-		Text:    string(e.Text),
-		HTML:    string(e.HTML),
+		Subject: subject,
+		Text:    text,
+		HTML:    html,
 	}
 	JSONResponse(w, er, http.StatusOK)
 }

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/fir3storm/AwareNow/config"
@@ -108,8 +109,15 @@ func clickLink(t *testing.T, ctx *testContext, rid string, expectedHTML string) 
 	if err != nil {
 		t.Fatalf("error reading payload from / endpoint response: %v", err)
 	}
-	if !bytes.Equal(got, []byte(expectedHTML)) {
-		t.Fatalf("invalid response received from / endpoint. expected %s got %s", got, expectedHTML)
+	// The phishing server injects the client-side tracking script into the
+	// page HTML before serving it (see renderPhishResponse), so the expected
+	// value must include that injection too.
+	want, err := models.InjectTrackingScriptToHTML(expectedHTML, rid)
+	if err != nil {
+		t.Fatalf("error injecting tracking script into expected HTML: %v", err)
+	}
+	if !bytes.Equal(got, []byte(want)) {
+		t.Fatalf("invalid response received from / endpoint. expected %s got %s", want, got)
 	}
 }
 
@@ -359,6 +367,50 @@ func TestTransparencyRequest(t *testing.T) {
 	transparencyRequest(t, ctx, result, rid, "/")
 	transparencyRequest(t, ctx, result, rid, "/track")
 	transparencyRequest(t, ctx, result, rid, "/report")
+}
+
+func TestReportUnknownEmail(t *testing.T) {
+	ctx := setupTest(t)
+	defer tearDown(t, ctx)
+
+	body := `{"reporter_email":"alice@example.com","subject":"Urgent: verify your account","body_text":"click here","body_html":"<p>click <a href=\"http://evil.example\">here</a></p>"}`
+	resp, err := http.Post(fmt.Sprintf("%s/report-unknown", ctx.phishServer.URL), "application/json", strings.NewReader(body))
+	if err != nil {
+		t.Fatalf("error requesting /report-unknown endpoint: %v", err)
+	}
+	defer resp.Body.Close()
+	got := resp.StatusCode
+	expected := http.StatusNoContent
+	if got != expected {
+		t.Fatalf("invalid status code received for /report-unknown endpoint. expected %d got %d", expected, got)
+	}
+
+	rms, err := models.GetReportedMessages(models.ReportedMessageStatusPending)
+	if err != nil {
+		t.Fatalf("error getting reported messages: %v", err)
+	}
+	if len(rms) != 1 {
+		t.Fatalf("unexpected number of reported messages. expected %d got %d", 1, len(rms))
+	}
+	if rms[0].ReporterEmail != "alice@example.com" {
+		t.Fatalf("unexpected reporter email. expected %s got %s", "alice@example.com", rms[0].ReporterEmail)
+	}
+}
+
+func TestReportUnknownEmailInvalidRequest(t *testing.T) {
+	ctx := setupTest(t)
+	defer tearDown(t, ctx)
+
+	resp, err := http.Post(fmt.Sprintf("%s/report-unknown", ctx.phishServer.URL), "application/json", strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("error requesting /report-unknown endpoint: %v", err)
+	}
+	defer resp.Body.Close()
+	got := resp.StatusCode
+	expected := http.StatusBadRequest
+	if got != expected {
+		t.Fatalf("invalid status code received for /report-unknown endpoint. expected %d got %d", expected, got)
+	}
 }
 
 func TestRedirectTemplating(t *testing.T) {
