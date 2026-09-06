@@ -32,6 +32,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-05 — Task 2 (public intake endpoint + ParseEmailContent helper) shipped. Deviated from the plan's illustrative test code again: controllers/ tests use plain testing.T with a real httptest.Server (setupTest/tearDown in controllers_test.go) and real HTTP calls, not gocheck and not direct ServeHTTP calls. While verifying this, also fixed unrelated pre-existing breakage that was blocking it: controllers/api had several compile errors (undefined models.NowUTC, a uint/int64 JWT UserID mismatch, DeliveryConfig/CampaignSMTP field-name mismatches, a csv.Writer.Flush() misuse) and the smtp/campaigns/results tables were missing columns their Go structs already expected (the real migrations for those existed only under db/migrations/, a path this app never actually reads — relocated to db/db_sqlite3/migrations/ and db/db_mysql/migrations/). Also fixed two stale test assertions in controllers/phish_test.go's clickLink helper that predated the tracking-script-injection feature.
 - 2026-09-05 — Task 3 (admin review API) shipped. Same test-convention correction as Tasks 1-2 (real ServeHTTP + Bearer-token requests, not the plan's pseudocode). Also found the built-in "user" role already has PermissionModifyObjects — the permission-denial test needed a user with zero role_permissions rows, not the existing createUnpriviledgedUser helper, to actually hit the 403 path.
 - 2026-09-05 — Task 4 (Reported Messages web UI) shipped. Built this repo's first test harness for a useQuery-based component (a per-test QueryClientProvider wrapper) since none existed. Confirmed the new API client correctly reads raw response bodies rather than copying a pre-existing, out-of-scope bug in web/src/api/templates.ts that assumes a {success,message,data} envelope the real backend doesn't send for that endpoint.
+- 2026-09-06 — Tasks 6-7 (PDF/XLSX analytics export) shipped, plus a frontend export UI and two more instances of the templates.ts-style response-envelope bug (web/src/api/analytics.ts, campaigns.ts) fixed in Dashboard.tsx. Added spreadsheet formula-injection sanitization for the one user-controlled string field (DepartmentStats.Department) written into the XLSX export. Pinned excelize to v2.9.0 instead of latest v2.11.0 to avoid an unnecessary go.mod bump from go 1.21 to go 1.25.
 
 ---
 
@@ -126,7 +127,7 @@ configuration issue remains outside this reporting milestone. Other campaign
 resource clients retain their pre-existing response-envelope assumptions.
 Control-plane installation reports three high-severity dependency findings.
 See [intake configuration and legacy-report recovery](../../report-intake.md).
-No commit, push, release, or mailbox pilot is claimed by this local completion.
+The P0 changes described above were committed and pushed to main in commits c2e9c45, 3172877, bbfd9b8, and db67e39 on 2026-09-06, after the local verification recorded here. No release or mailbox pilot is claimed.
 
 ### P1 — Finish the reporting loop and usable exports
 
@@ -1599,13 +1600,13 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: `models.GetAnalyticsOverview`, `models.GetOverallTimeline`, `models.GetDepartmentStats`, `models.GetRiskScore` (all already exist, used identically in the existing `exportCSV`/`generateCSVFromAnalytics` in `controllers/api/analytics.go` — reuse those exact calls).
 - Produces: `func exportPDF(w http.ResponseWriter, r *http.Request, uid int64)` matching the existing `exportCSV`/`exportJSON` signature pattern.
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 ```bash
 go get github.com/go-pdf/fpdf@latest
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```go
 // controllers/api/export_pdf_test.go
@@ -1636,12 +1637,12 @@ func TestExportAnalyticsPDF(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `go test ./controllers/api/ -run TestExportAnalyticsPDF -v`
 Expected: FAIL — still returns 501 per the current `case "pdf", "xlsx":` branch.
 
-- [ ] **Step 4: Implement `exportPDF`**
+- [x] **Step 4: Implement `exportPDF`**
 
 ```go
 // controllers/api/export_pdf.go
@@ -1727,7 +1728,7 @@ func exportPDF(w http.ResponseWriter, r *http.Request, uid int64) {
 }
 ```
 
-- [ ] **Step 5: Wire it into `ExportAnalytics`**
+- [x] **Step 5: Wire it into `ExportAnalytics`**
 
 In `controllers/api/analytics.go`, change:
 
@@ -1747,12 +1748,12 @@ case "xlsx":
 
 (If Task 7 hasn't shipped yet when this task ships, keep `"xlsx"` in the not-implemented branch and only pull `"pdf"` out of it — do not reference `exportXLSX` before it exists.)
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `go test ./controllers/api/ -run TestExportAnalyticsPDF -v`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add go.mod go.sum controllers/api/export_pdf.go controllers/api/analytics.go controllers/api/export_pdf_test.go
@@ -1775,13 +1776,13 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: same analytics model functions as Task 6, plus `models.GetOverallTimeline`.
 - Produces: `func exportXLSX(w http.ResponseWriter, r *http.Request, uid int64)`.
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 ```bash
 go get github.com/xuri/excelize/v2@latest
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 ```go
 // controllers/api/export_xlsx_test.go
@@ -1813,12 +1814,12 @@ func TestExportAnalyticsXLSX(t *testing.T) {
 }
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `go test ./controllers/api/ -run TestExportAnalyticsXLSX -v`
 Expected: FAIL
 
-- [ ] **Step 4: Implement `exportXLSX`**
+- [x] **Step 4: Implement `exportXLSX`**
 
 ```go
 // controllers/api/export_xlsx.go
@@ -1919,16 +1920,16 @@ func exportXLSX(w http.ResponseWriter, r *http.Request, uid int64) {
 }
 ```
 
-- [ ] **Step 5: Wire it into `ExportAnalytics`**
+- [x] **Step 5: Wire it into `ExportAnalytics`**
 
 Same edit point as Task 6, Step 5 — add the `case "xlsx": exportXLSX(w, r, uid)` arm. If Task 6 already landed and left `case "pdf": exportPDF(...)` in place with `"xlsx"` still falling into the not-implemented branch, split that branch's `case` line to remove `"xlsx"` from it.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `go test ./controllers/api/ -run TestExportAnalyticsXLSX -v`
 Expected: PASS
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add go.mod go.sum controllers/api/export_xlsx.go controllers/api/analytics.go controllers/api/export_xlsx_test.go
