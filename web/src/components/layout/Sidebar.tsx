@@ -9,6 +9,7 @@ import {
   Settings,
   Shield,
   Flag,
+  ClipboardCheck,
 } from 'lucide-react';
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
   { to: '/campaigns', icon: Mail, label: 'Campaigns' },
   { to: '/templates', icon: FileText, label: 'Email Templates' },
   { to: '/reported-messages', icon: Flag, label: 'Reported Messages' },
+  { to: '/assessments', icon: ClipboardCheck, label: 'Assessments' },
   { to: '/groups', icon: Users, label: 'Users & Groups' },
   { to: '/pages', icon: Globe, label: 'Landing Pages' },
   { to: '/sending-profiles', icon: Send, label: 'Sending Profiles' },
