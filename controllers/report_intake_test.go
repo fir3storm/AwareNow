@@ -108,7 +108,7 @@ func TestReportIntakeIdempotency(t *testing.T) {
 			t.Fatalf("status %d, want %d", resp.StatusCode, tc.status)
 		}
 	}
-	reports, err := models.GetReportedMessages(1, "")
+	reports, _, err := models.GetReportedMessages(1, models.ReportedMessageFilter{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -385,7 +385,7 @@ func TestReportUnknownEmail(t *testing.T) {
 		t.Fatalf("invalid status code received for /report-unknown endpoint. expected %d got %d", expected, got)
 	}
 
-	rms, err := models.GetReportedMessages(1, models.ReportedMessageStatusPending)
+	rms, _, err := models.GetReportedMessages(1, models.ReportedMessageFilter{Status: models.ReportedMessageStatusPending})
 	if err != nil {
 		t.Fatalf("error getting reported messages: %v", err)
 	}

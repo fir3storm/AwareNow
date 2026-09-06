@@ -60,15 +60,23 @@ func TestReportedMessagesListAndGet(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("unexpected status code received listing reported messages. expected %d got %d", http.StatusOK, w.Code)
 	}
-	var msgs []models.ReportedMessage
-	if err := json.NewDecoder(w.Body).Decode(&msgs); err != nil {
+	var listResp struct {
+		Data    []models.ReportedMessage `json:"data"`
+		Total   int64                    `json:"total"`
+		Page    int                      `json:"page"`
+		PerPage int                      `json:"per_page"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&listResp); err != nil {
 		t.Fatalf("error decoding reported messages list: %v", err)
 	}
-	if len(msgs) != 1 {
-		t.Fatalf("unexpected number of reported messages received. expected 1 got %d", len(msgs))
+	if len(listResp.Data) != 1 {
+		t.Fatalf("unexpected number of reported messages received. expected 1 got %d", len(listResp.Data))
 	}
-	if msgs[0].ReporterEmail != "bob@example.com" {
-		t.Fatalf("unexpected reporter email received. expected %s got %s", "bob@example.com", msgs[0].ReporterEmail)
+	if listResp.Total != 1 {
+		t.Fatalf("unexpected total received. expected 1 got %d", listResp.Total)
+	}
+	if listResp.Data[0].ReporterEmail != "bob@example.com" {
+		t.Fatalf("unexpected reporter email received. expected %s got %s", "bob@example.com", listResp.Data[0].ReporterEmail)
 	}
 
 	// Get-by-id endpoint
@@ -87,6 +95,76 @@ func TestReportedMessagesListAndGet(t *testing.T) {
 	}
 	if got.ReporterEmail != "bob@example.com" {
 		t.Fatalf("unexpected reporter email received. expected %s got %s", "bob@example.com", got.ReporterEmail)
+	}
+}
+
+func TestReportedMessagesAPIPagination(t *testing.T) {
+	testCtx := setupTest(t)
+	for i := 0; i < 3; i++ {
+		rm := models.ReportedMessage{
+			OwnerID:       1,
+			ReporterEmail: fmt.Sprintf("reporter%d@example.com", i),
+			Subject:       "Test",
+			BodyHTML:      `<p><a href="http://evil.example">link</a></p>`,
+		}
+		if err := models.CreateReportedMessage(&rm); err != nil {
+			t.Fatalf("error creating reported message: %v", err)
+		}
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/api/reported-messages/?page=1&per_page=2", nil)
+	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testCtx.apiKey))
+	w := httptest.NewRecorder()
+	testCtx.apiServer.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("unexpected status code received listing reported messages. expected %d got %d", http.StatusOK, w.Code)
+	}
+	var listResp struct {
+		Data    []models.ReportedMessage `json:"data"`
+		Total   int64                    `json:"total"`
+		Page    int                      `json:"page"`
+		PerPage int                      `json:"per_page"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&listResp); err != nil {
+		t.Fatalf("error decoding reported messages list: %v", err)
+	}
+	if listResp.Total != 3 {
+		t.Fatalf("unexpected total. expected 3 got %d", listResp.Total)
+	}
+	if listResp.Page != 1 {
+		t.Fatalf("unexpected page. expected 1 got %d", listResp.Page)
+	}
+	if listResp.PerPage != 2 {
+		t.Fatalf("unexpected per_page. expected 2 got %d", listResp.PerPage)
+	}
+	if len(listResp.Data) != 2 {
+		t.Fatalf("unexpected number of reported messages on page 1. expected 2 got %d", len(listResp.Data))
+	}
+
+	// Second page should contain the remaining one message.
+	r = httptest.NewRequest(http.MethodGet, "/api/reported-messages/?page=2&per_page=2", nil)
+	r.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testCtx.apiKey))
+	w = httptest.NewRecorder()
+	testCtx.apiServer.ServeHTTP(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("unexpected status code received listing reported messages page 2. expected %d got %d", http.StatusOK, w.Code)
+	}
+	var listResp2 struct {
+		Data    []models.ReportedMessage `json:"data"`
+		Total   int64                    `json:"total"`
+		Page    int                      `json:"page"`
+		PerPage int                      `json:"per_page"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&listResp2); err != nil {
+		t.Fatalf("error decoding reported messages list page 2: %v", err)
+	}
+	if listResp2.Page != 2 {
+		t.Fatalf("unexpected page. expected 2 got %d", listResp2.Page)
+	}
+	if len(listResp2.Data) != 1 {
+		t.Fatalf("unexpected number of reported messages on page 2. expected 1 got %d", len(listResp2.Data))
 	}
 }
 
@@ -204,8 +282,10 @@ func TestReportedMessagesOwnerIsolation(t *testing.T) {
 		r.Header.Set("Authorization", "Bearer "+other.ApiKey)
 		w := httptest.NewRecorder()
 		testCtx.apiServer.ServeHTTP(w, r)
-		var reports []models.ReportedMessage
-		if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &reports) != nil || len(reports) != 0 {
+		var listResp struct {
+			Data []models.ReportedMessage `json:"data"`
+		}
+		if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &listResp) != nil || len(listResp.Data) != 0 {
 			t.Fatalf("foreign list exposed reports: %d %s", w.Code, w.Body.String())
 		}
 	}

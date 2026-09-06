@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"strings"
 	"time"
 
 	log "github.com/fir3storm/AwareNow/logger"
@@ -83,19 +84,71 @@ func CreateReportedMessage(rm *ReportedMessage) error {
 	return err
 }
 
-// GetReportedMessages returns all reported messages with the given status.
-// Pass an empty string to return all reported messages regardless of status.
-func GetReportedMessages(ownerID int64, status string) ([]ReportedMessage, error) {
+// ReportedMessageFilter narrows a reported-messages query. Zero values mean
+// "no filter" for that field; Page defaults to 1 and PerPage to 25 if <= 0,
+// and PerPage is capped at 100 to bound query cost.
+type ReportedMessageFilter struct {
+	Status        string
+	Search        string // matches ReporterEmail or Subject, case-insensitive substring
+	CreatedAfter  *time.Time
+	CreatedBefore *time.Time
+	Page          int
+	PerPage       int
+}
+
+// likeEscaper neutralizes the SQL LIKE wildcard characters % and _ (and the
+// escape character itself) so a search term is matched literally rather than
+// as a wildcard pattern.
+var likeEscaper = strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+
+// escapeLikeTerm escapes wildcard characters in a LIKE pattern fragment. Use
+// together with `ESCAPE '\'` in the LIKE clause.
+func escapeLikeTerm(term string) string {
+	return likeEscaper.Replace(term)
+}
+
+// GetReportedMessages returns a page of reported messages owned by ownerID
+// matching the given filter, plus the total count of matching rows (for
+// pagination UI) ignoring Page/PerPage.
+func GetReportedMessages(ownerID int64, filter ReportedMessageFilter) (messages []ReportedMessage, total int64, err error) {
 	rms := []ReportedMessage{}
-	query := db.Where("owner_id = ? AND owner_id > 0", ownerID).Order("created_at desc")
-	if status != "" {
-		query = query.Where("status = ?", status)
+	query := db.Model(&ReportedMessage{}).Where("owner_id = ? AND owner_id > 0", ownerID)
+	if filter.Status != "" {
+		query = query.Where("status = ?", filter.Status)
 	}
-	err := query.Find(&rms).Error
+	if filter.Search != "" {
+		like := "%" + escapeLikeTerm(filter.Search) + "%"
+		query = query.Where("reporter_email LIKE ? ESCAPE '\\' OR subject LIKE ? ESCAPE '\\'", like, like)
+	}
+	if filter.CreatedAfter != nil {
+		query = query.Where("created_at >= ?", *filter.CreatedAfter)
+	}
+	if filter.CreatedBefore != nil {
+		query = query.Where("created_at <= ?", *filter.CreatedBefore)
+	}
+
+	if err = query.Count(&total).Error; err != nil {
+		log.Errorf("error counting reported messages: %v", err)
+		return rms, 0, err
+	}
+
+	page := filter.Page
+	if page <= 0 {
+		page = 1
+	}
+	perPage := filter.PerPage
+	if perPage <= 0 {
+		perPage = 25
+	}
+	if perPage > 100 {
+		perPage = 100
+	}
+
+	err = query.Order("created_at desc").Limit(perPage).Offset((page - 1) * perPage).Find(&rms).Error
 	if err != nil {
 		log.Errorf("error getting reported messages: %v", err)
 	}
-	return rms, err
+	return rms, total, err
 }
 
 // GetReportedMessageByID retrieves a single reported message by its primary key.

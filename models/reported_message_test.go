@@ -21,7 +21,7 @@ func (s *ModelsSuite) TestCreateAndGetReportedMessage(c *check.C) {
 	c.Assert(err, check.Equals, nil)
 	c.Assert(got.Subject, check.Equals, rm.Subject)
 
-	rms, err := GetReportedMessages(1, ReportedMessageStatusPending)
+	rms, _, err := GetReportedMessages(1, ReportedMessageFilter{Status: ReportedMessageStatusPending})
 	c.Assert(err, check.Equals, nil)
 	c.Assert(len(rms), check.Equals, 1)
 }
@@ -36,7 +36,7 @@ func (s *ModelsSuite) TestReportedMessageOwnership(c *check.C) {
 	c.Assert(CreateReportedMessage(&rm), check.IsNil)
 	_, err := GetReportedMessageByID(rm.ID, 2)
 	c.Assert(err, check.Equals, ErrReportedMessageNotFound)
-	rms, err := GetReportedMessages(2, "")
+	rms, _, err := GetReportedMessages(2, ReportedMessageFilter{})
 	c.Assert(err, check.IsNil)
 	c.Assert(rms, check.HasLen, 0)
 	c.Assert(RejectReportedMessage(rm.ID, 2, "other"), check.Equals, ErrReportedMessageNotFound)
@@ -47,7 +47,7 @@ func (s *ModelsSuite) TestReportedMessageOwnership(c *check.C) {
 	c.Assert(db.Model(&rm).Update("owner_id", 0).Error, check.IsNil)
 	_, err = GetReportedMessageByID(rm.ID, 0)
 	c.Assert(err, check.Equals, ErrReportedMessageNotFound)
-	rms, err = GetReportedMessages(0, "")
+	rms, _, err = GetReportedMessages(0, ReportedMessageFilter{})
 	c.Assert(err, check.IsNil)
 	c.Assert(rms, check.HasLen, 0)
 	c.Assert(RejectReportedMessage(rm.ID, 0, "admin"), check.Equals, ErrReportedMessageNotFound)
@@ -111,9 +111,56 @@ func (s *ModelsSuite) TestReportedMessageIdempotency(c *check.C) {
 		withoutKey.IdempotencyKeyHash = nil
 		c.Assert(CreateReportedMessage(&withoutKey), check.IsNil)
 	}
-	rms, err := GetReportedMessages(1, "")
+	rms, _, err := GetReportedMessages(1, ReportedMessageFilter{})
 	c.Assert(err, check.IsNil)
 	c.Assert(rms, check.HasLen, 3)
+}
+
+func (s *ModelsSuite) TestReportedMessagesFilterBySearch(c *check.C) {
+	c.Assert(CreateReportedMessage(&ReportedMessage{OwnerID: 1, ReporterEmail: "alice@example.com", Subject: "Invoice overdue", BodyText: "Test"}), check.IsNil)
+	c.Assert(CreateReportedMessage(&ReportedMessage{OwnerID: 1, ReporterEmail: "bob@example.com", Subject: "Password reset", BodyText: "Test"}), check.IsNil)
+	c.Assert(CreateReportedMessage(&ReportedMessage{OwnerID: 1, ReporterEmail: "carol@example.com", Subject: "Meeting notes", BodyText: "Test"}), check.IsNil)
+
+	// Search matches only the reporter email.
+	rms, total, err := GetReportedMessages(1, ReportedMessageFilter{Search: "bob@"})
+	c.Assert(err, check.IsNil)
+	c.Assert(total, check.Equals, int64(1))
+	c.Assert(rms, check.HasLen, 1)
+	c.Assert(rms[0].ReporterEmail, check.Equals, "bob@example.com")
+
+	// Search matches only the subject.
+	rms, total, err = GetReportedMessages(1, ReportedMessageFilter{Search: "Invoice"})
+	c.Assert(err, check.IsNil)
+	c.Assert(total, check.Equals, int64(1))
+	c.Assert(rms, check.HasLen, 1)
+	c.Assert(rms[0].Subject, check.Equals, "Invoice overdue")
+
+	// No match.
+	rms, total, err = GetReportedMessages(1, ReportedMessageFilter{Search: "nonexistent-term"})
+	c.Assert(err, check.IsNil)
+	c.Assert(total, check.Equals, int64(0))
+	c.Assert(rms, check.HasLen, 0)
+}
+
+func (s *ModelsSuite) TestReportedMessagesPagination(c *check.C) {
+	for i := 0; i < 5; i++ {
+		c.Assert(CreateReportedMessage(&ReportedMessage{OwnerID: 1, ReporterEmail: "page@example.com", Subject: "Page test", BodyText: "Test"}), check.IsNil)
+	}
+
+	rms, total, err := GetReportedMessages(1, ReportedMessageFilter{Page: 1, PerPage: 2})
+	c.Assert(err, check.IsNil)
+	c.Assert(total, check.Equals, int64(5))
+	c.Assert(rms, check.HasLen, 2)
+
+	rms, total, err = GetReportedMessages(1, ReportedMessageFilter{Page: 2, PerPage: 2})
+	c.Assert(err, check.IsNil)
+	c.Assert(total, check.Equals, int64(5))
+	c.Assert(rms, check.HasLen, 2)
+
+	rms, total, err = GetReportedMessages(1, ReportedMessageFilter{Page: 3, PerPage: 2})
+	c.Assert(err, check.IsNil)
+	c.Assert(total, check.Equals, int64(5))
+	c.Assert(rms, check.HasLen, 1)
 }
 
 // Existing records have no trustworthy owner to infer. Schema upgrades must
@@ -130,7 +177,7 @@ func (s *ModelsSuite) TestReportedMessageLegacySchemaQuarantine(c *check.C) {
 	db = legacy
 	defer func() { db = originalDB }()
 	for _, owner := range []int64{0, 1, 2} {
-		reports, err := GetReportedMessages(owner, "")
+		reports, _, err := GetReportedMessages(owner, ReportedMessageFilter{})
 		c.Assert(err, check.IsNil)
 		c.Assert(reports, check.HasLen, 0)
 		_, err = GetReportedMessageByID(1, owner)

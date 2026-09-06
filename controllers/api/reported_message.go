@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	ctx "github.com/fir3storm/AwareNow/context"
 	log "github.com/fir3storm/AwareNow/logger"
@@ -11,22 +12,99 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// ReportedMessages returns all reported messages, optionally filtered by
-// the ?status= query parameter.
+// reportedMessagesDefaultPerPage and reportedMessagesMaxPerPage mirror the
+// defaulting/capping behavior of models.GetReportedMessages so the handler
+// can echo back the effective page/per_page values used.
+const (
+	reportedMessagesDefaultPerPage = 25
+	reportedMessagesMaxPerPage     = 100
+)
+
+// ReportedMessages returns a page of reported messages, optionally filtered
+// by the ?status=, ?search=, ?created_after=, and ?created_before= query
+// parameters, and paginated via ?page= and ?per_page=.
+//
+// created_after/created_before must be RFC3339 timestamps (e.g.
+// "2026-09-01T00:00:00Z"); an unparseable value is rejected with 400 rather
+// than silently ignored. page defaults to 1 if omitted or <= 0. per_page
+// defaults to 25 if omitted or <= 0, and is clamped (not rejected) to a
+// maximum of 100.
+//
 // GET /api/reported-messages/
+//
+// NOTE: unlike most list endpoints in this codebase, this one deliberately
+// returns a JSON envelope - {"data": [...], "total": N, "page": N,
+// "per_page": N} - rather than a bare array, so pagination metadata can
+// travel alongside the results. This is intentional: do not "simplify" it
+// back to a bare array.
 func (as *Server) ReportedMessages(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		JSONResponse(w, models.Response{Success: false, Message: "Method not allowed"}, http.StatusMethodNotAllowed)
 		return
 	}
-	status := r.URL.Query().Get("status")
-	msgs, err := models.GetReportedMessages(ctx.Get(r, "user_id").(int64), status)
+	q := r.URL.Query()
+	filter := models.ReportedMessageFilter{
+		Status: q.Get("status"),
+		Search: q.Get("search"),
+	}
+
+	if v := q.Get("created_after"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: "Invalid created_after: must be RFC3339"}, http.StatusBadRequest)
+			return
+		}
+		filter.CreatedAfter = &t
+	}
+	if v := q.Get("created_before"); v != "" {
+		t, err := time.Parse(time.RFC3339, v)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: "Invalid created_before: must be RFC3339"}, http.StatusBadRequest)
+			return
+		}
+		filter.CreatedBefore = &t
+	}
+
+	page := 1
+	if v := q.Get("page"); v != "" {
+		p, err := strconv.Atoi(v)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: "Invalid page: must be an integer"}, http.StatusBadRequest)
+			return
+		}
+		if p > 0 {
+			page = p
+		}
+	}
+	perPage := reportedMessagesDefaultPerPage
+	if v := q.Get("per_page"); v != "" {
+		pp, err := strconv.Atoi(v)
+		if err != nil {
+			JSONResponse(w, models.Response{Success: false, Message: "Invalid per_page: must be an integer"}, http.StatusBadRequest)
+			return
+		}
+		if pp > 0 {
+			perPage = pp
+		}
+	}
+	if perPage > reportedMessagesMaxPerPage {
+		perPage = reportedMessagesMaxPerPage
+	}
+	filter.Page = page
+	filter.PerPage = perPage
+
+	msgs, total, err := models.GetReportedMessages(ctx.Get(r, "user_id").(int64), filter)
 	if err != nil {
 		log.Error(err)
 		JSONResponse(w, models.Response{Success: false, Message: "Error retrieving reported messages"}, http.StatusInternalServerError)
 		return
 	}
-	JSONResponse(w, msgs, http.StatusOK)
+	JSONResponse(w, struct {
+		Data    []models.ReportedMessage `json:"data"`
+		Total   int64                    `json:"total"`
+		Page    int                      `json:"page"`
+		PerPage int                      `json:"per_page"`
+	}{Data: msgs, Total: total, Page: page, PerPage: perPage}, http.StatusOK)
 }
 
 // ReportedMessage returns a single reported message by ID.
