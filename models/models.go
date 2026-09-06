@@ -260,6 +260,8 @@ func Setup(c *config.Config) error {
 	autoMigrateReportedMessages()
 	// Auto-migrate scenario and assessment tables
 	autoMigrateScenariosAndAssessments()
+	// Auto-migrate assessment phase tables
+	autoMigrateAssessmentPhases()
 	return nil
 }
 
@@ -295,4 +297,12 @@ func autoMigrateReportedMessages() {
 func autoMigrateScenariosAndAssessments() {
 	db.AutoMigrate(&Scenario{})
 	db.AutoMigrate(&Assessment{})
+}
+
+// autoMigrateAssessmentPhases ensures the assessment_phases table exists
+// in the database using GORM's AutoMigrate. This is a safety net alongside
+// the goose SQL migration in
+// db/db_<driver>/migrations/20260907120000_assessment_phases.sql.
+func autoMigrateAssessmentPhases() {
+	db.AutoMigrate(&AssessmentPhase{})
 }
