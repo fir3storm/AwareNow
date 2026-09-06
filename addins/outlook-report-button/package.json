@@ -1,0 +1,13 @@
+{
+  "name": "awarenow-outlook-report-button",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "AwareNow Outlook add-in: integrated spam/phishing reporting via ReportPhishingCommandSurface.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  }
+}
