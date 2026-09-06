@@ -1,7 +1,9 @@
 package models
 
 import (
+	"archive/zip"
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"io/ioutil"
@@ -50,16 +52,42 @@ func (s *ModelsSuite) TestAttachment(c *check.C) {
 			c.Assert(a.vanillaFile, check.Equals, strings.Contains(fname, "without-vars"))
 			c.Assert(a.vanillaFile, check.Not(check.Equals), strings.Contains(fname, "with-vars"))
 
-			// Verfify template was applied as expected
+			// Verify template was applied as expected.
 			tt, err := ioutil.ReadAll(t)
 			if err != nil {
 				log.Fatalf("Failed to parse templated file '%s': %v\n", fname, err)
 			}
-			templatedFile := base64.StdEncoding.EncodeToString(tt)
 			expectedOutput := readFile("testdata/" + strings.TrimSuffix(ff.Name(), filepath.Ext(ff.Name())) + ".templated" + filepath.Ext(ff.Name())) // e.g text-file-with-vars.templated.txt
-			c.Assert(templatedFile, check.Equals, expectedOutput)
+			expectedBytes, err := base64.StdEncoding.DecodeString(expectedOutput)
+			c.Assert(err, check.IsNil)
+			switch filepath.Ext(fname) {
+			case ".docx", ".docm", ".pptx", ".xlsx", ".xlsm":
+				// ZIP compression can change between Go releases without changing
+				// the document. Compare every entry's name and uncompressed bytes.
+				c.Assert(attachmentArchiveContents(c, tt), check.DeepEquals, attachmentArchiveContents(c, expectedBytes), check.Commentf("attachment: %s", fname))
+			default:
+				c.Assert(tt, check.DeepEquals, expectedBytes, check.Commentf("attachment: %s", fname))
+			}
 		}
 	}
+}
+
+func attachmentArchiveContents(c *check.C, data []byte) map[string][]byte {
+	archive, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	c.Assert(err, check.IsNil)
+	contents := make(map[string][]byte, len(archive.File))
+	for _, entry := range archive.File {
+		_, duplicate := contents[entry.Name]
+		c.Assert(duplicate, check.Equals, false, check.Commentf("duplicate archive entry: %s", entry.Name))
+		reader, err := entry.Open()
+		c.Assert(err, check.IsNil)
+		content, readErr := ioutil.ReadAll(reader)
+		closeErr := reader.Close()
+		c.Assert(readErr, check.IsNil)
+		c.Assert(closeErr, check.IsNil)
+		contents[entry.Name] = content
+	}
+	return contents
 }
 
 func readFile(fname string) string {
