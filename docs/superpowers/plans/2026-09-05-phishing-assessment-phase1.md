@@ -33,6 +33,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-05 — Task 3 (admin review API) shipped. Same test-convention correction as Tasks 1-2 (real ServeHTTP + Bearer-token requests, not the plan's pseudocode). Also found the built-in "user" role already has PermissionModifyObjects — the permission-denial test needed a user with zero role_permissions rows, not the existing createUnpriviledgedUser helper, to actually hit the 403 path.
 - 2026-09-05 — Task 4 (Reported Messages web UI) shipped. Built this repo's first test harness for a useQuery-based component (a per-test QueryClientProvider wrapper) since none existed. Confirmed the new API client correctly reads raw response bodies rather than copying a pre-existing, out-of-scope bug in web/src/api/templates.ts that assumes a {success,message,data} envelope the real backend doesn't send for that endpoint.
 - 2026-09-06 — Tasks 6-7 (PDF/XLSX analytics export) shipped, plus a frontend export UI and two more instances of the templates.ts-style response-envelope bug (web/src/api/analytics.ts, campaigns.ts) fixed in Dashboard.tsx. Added spreadsheet formula-injection sanitization for the one user-controlled string field (DepartmentStats.Department) written into the XLSX export. Pinned excelize to v2.9.0 instead of latest v2.11.0 to avoid an unnecessary go.mod bump from go 1.21 to go 1.25.
+- 2026-09-06 — Task 5 (Outlook add-in) implemented and locally verified via subagent swarm, refreshed against Microsoft's actual current spam-reporting spec (the plan's original sketch used the wrong extension point/event model). A human mailbox pilot is still required before it's considered complete. Also shipped, in parallel: server-side pagination/search/date filters for the reported-messages API (a deliberate, documented envelope exception — {data,total,page,per_page}, unlike the bare-array convention elsewhere), and the corresponding ReportedMessageList UI (filters, pagination, a detail view, and a dependency-free sandboxed-iframe+CSP safe HTML preview for untrusted report bodies).
 
 ---
 
@@ -144,7 +145,7 @@ proceed independently against verified owner-scoped analytics.
   reporting-endpoint validation, clear success/failure feedback, and safe
   retries. Test rid extraction against unrelated links, not just positive cases.
   Run a controlled mailbox pilot before marking client integration complete.
-- [ ] Improve `web/src/pages/ReportedMessages/ReportedMessageList.tsx` with
+- [x] Improve `web/src/pages/ReportedMessages/ReportedMessageList.tsx` with
   server pagination, status/date/search filters, detail inspection, and visible
   query/mutation errors. Preview untrusted content as text by default; any HTML
   preview must prevent scripts, external loads, and active navigation.
@@ -1284,6 +1285,8 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 
 ## Task 5: Outlook add-in — one-click report button (independent of Tasks 1-4)
 
+Design, manifest, event handler, and rid-extraction logic are implemented and locally verified (schema validation, unit tests) as of 2026-09-06 — see addins/outlook-report-button/README.md. The manual mailbox pilot this plan requires before calling client integration complete has not been run.
+
 **Files:**
 - Create: `addins/outlook-report-button/manifest.xml`
 - Create: `addins/outlook-report-button/commands.html`
@@ -1297,7 +1300,7 @@ Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
 - Consumes: the **existing** `GET/POST /report?rid=<7-char-id>` endpoint (`controllers/phish.go`'s `ReportHandler`, already implemented, already CORS-open) for known campaign emails; the new `POST /report-unknown` endpoint (Task 2) for anything else.
 - Produces: a side-loadable Office Add-in manifest an admin can deploy org-wide via Microsoft 365 admin center (Integrated Apps) or side-load individually for testing.
 
-- [ ] **Step 1: Write the failing unit test for rid extraction**
+- [x] **Step 1: Write the failing unit test for rid extraction**
 
 ```js
 // addins/outlook-report-button/src/extractRid.test.js
@@ -1322,12 +1325,12 @@ describe('extractRid', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd addins/outlook-report-button && npx vitest run src/extractRid.test.js`
 Expected: FAIL — module does not exist.
 
-- [ ] **Step 3: Implement `extractRid`**
+- [x] **Step 3: Implement `extractRid`**
 
 ```js
 // addins/outlook-report-button/src/extractRid.js
@@ -1342,12 +1345,12 @@ export function extractRid(text) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd addins/outlook-report-button && npx vitest run src/extractRid.test.js`
 Expected: PASS
 
-- [ ] **Step 5: Add minimal package.json for the test runner**
+- [x] **Step 5: Add minimal package.json for the test runner**
 
 ```json
 {
@@ -1364,7 +1367,7 @@ Expected: PASS
 }
 ```
 
-- [ ] **Step 6: Write `commands.js`, the add-in's actual behavior**
+- [x] **Step 6: Write `commands.js`, the add-in's actual behavior**
 
 ```js
 // addins/outlook-report-button/src/commands.js
@@ -1440,7 +1443,7 @@ Office.actions = Office.actions || {};
 Office.actions.associate('reportPhishing', reportPhishing);
 ```
 
-- [ ] **Step 7: Write `commands.html`, the function-file host page**
+- [x] **Step 7: Write `commands.html`, the function-file host page**
 
 ```html
 <!doctype html>
@@ -1455,7 +1458,7 @@ Office.actions.associate('reportPhishing', reportPhishing);
 </html>
 ```
 
-- [ ] **Step 8: Write `manifest.xml`**
+- [x] **Step 8: Write `manifest.xml`**
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1552,7 +1555,7 @@ Office.actions.associate('reportPhishing', reportPhishing);
 </OfficeApp>
 ```
 
-- [ ] **Step 9: Write the README covering the two things this plan cannot automate**
+- [x] **Step 9: Write the README covering the two things this plan cannot automate**
 
 ```markdown
 # AwareNow Outlook Report Button
@@ -1577,7 +1580,7 @@ Office.actions.associate('reportPhishing', reportPhishing);
    proper settings dialog as a fast-follow.
 ```
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add addins/outlook-report-button/
