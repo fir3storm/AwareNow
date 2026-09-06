@@ -36,6 +36,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-06 — Task 5 (Outlook add-in) implemented and locally verified via subagent swarm, refreshed against Microsoft's actual current spam-reporting spec (the plan's original sketch used the wrong extension point/event model). A human mailbox pilot is still required before it's considered complete. Also shipped, in parallel: server-side pagination/search/date filters for the reported-messages API (a deliberate, documented envelope exception — {data,total,page,per_page}, unlike the bare-array convention elsewhere), and the corresponding ReportedMessageList UI (filters, pagination, a detail view, and a dependency-free sandboxed-iframe+CSP safe HTML preview for untrusted report bodies).
 - 2026-09-06 — USP-1 (measurement specification) shipped: docs/superpowers/specs/2026-09-06-usp-measurement-spec.md and the new `assessment` package, validated against a hand-checked fixture rather than trusting an agent to improvise statistical semantics. USP-2 (persisted Assessment/Scenario/Cohort schema) is the next dependency before USP-3/4 can build on this.
 - 2026-09-07 — USP-2 (Scenario/Assessment provenance model + API) shipped. A dedicated verification pass actively red-teamed the ValidateScenarioSafety sanitizer (not just re-running its own test suite) and found three real, verified-live bypasses — `<base>`-retargeted anchors, CSS url()/@import via `<style>`/`style=`, and `<img srcset>` — which were fixed and covered by new regression tests before this was marked complete. USP-3 (cohort assignment, campaign linkage, observation-window orchestration) is next.
+- 2026-09-07 — USP-3 (AssessmentPhase orchestration) shipped. Links a phase to an admin-created Campaign without ever launching one itself. A dedicated ownership-boundary review found and got fixed a real (minor, non-corrupting) concurrency gap in the idempotent upsert logic. USP-4 (evidence view/export) is next; USP-5 is a human buyer pilot, not implementation work.
 
 ---
 
@@ -310,10 +311,23 @@ export foundation, ahead of the broader P2 feature list; reuse P2 metrics work.
   any general sense; that judgment remains the human reviewer's job via the
   separate approval step, documented as such in the code rather than
   overclaimed.
-- [ ] **USP-3: Assessment orchestration.** Persist cohort assignments, campaign
+- [x] **USP-3: Assessment orchestration.** Persist cohort assignments, campaign
   links, assessment conditions, and observation windows. Start with explicit
   administrator setup and one recognition skill; no autonomous campaign launch.
   Verify ownership, retry safety, and repeatable assignment.
+  Done 2026-09-07: `models/assessment_phase.go` + `controllers/api`
+  handlers. "No autonomous campaign launch" is structural, not just a
+  policy note — this code never calls PostCampaign or the worker's launch
+  path; it only links a phase to a Campaign an administrator already
+  created through the ordinary flow, and its recipient groups ARE the
+  cohort (no separate cohort/Group duplication). "Repeatable assignment"
+  is a real idempotent upsert-by-(assessment,phase), verified by a
+  dedicated review that also found and got fixed a genuine (if minor,
+  non-corrupting) concurrency gap: two racing callers could both attempt
+  an insert past the initial lookup, surfacing a raw DB error instead of
+  the promised clean update — closed by re-selecting once after a failed
+  create before giving up. Ownership scoping was independently re-traced
+  end to end (SQL WHERE-clause level throughout, not a post-fetch check).
 - [ ] **USP-4: Evidence view and export.** Extend Go analytics and the React UI
   with baseline/follow-up comparisons, benign controls, uncertainty, and explicit
   limitations. Export a versioned JSON evidence bundle plus PDF/XLSX summary.
