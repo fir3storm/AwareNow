@@ -133,18 +133,20 @@ func (r Recipient) firstReport(window time.Duration) (time.Duration, bool) {
 const MinCohortSize = 10
 
 // Proportion is a computed rate with its 95% Wilson score confidence
-// interval (spec §3.5) and small-cohort suppression flag.
+// interval (spec §3.5) and small-cohort suppression flag. JSON tags are
+// snake_case to match the rest of the assessment-evidence API surface
+// (models.EvidenceBundle etc.) that serializes this type directly.
 type Proportion struct {
-	Numerator   int
-	Denominator int
-	Rate        float64
-	CILow       float64
-	CIHigh      float64
+	Numerator   int     `json:"numerator"`
+	Denominator int     `json:"denominator"`
+	Rate        float64 `json:"rate"`
+	CILow       float64 `json:"ci_low"`
+	CIHigh      float64 `json:"ci_high"`
 	// Suppressed is true when Denominator < MinCohortSize. Rate/CILow/CIHigh
 	// are still computed (so tests and internal tooling can inspect them)
 	// but callers presenting this to a user must show "insufficient data
 	// (n=<Denominator>)" instead of Rate when Suppressed is true.
-	Suppressed bool
+	Suppressed bool `json:"suppressed"`
 }
 
 // wilsonInterval computes the 95% Wilson score interval for a proportion of
@@ -241,10 +243,16 @@ func Recovery(recipients []Recipient, window time.Duration) Proportion {
 // nonreporting proportion, computed over the same eligible set as
 // Recognition.
 type SpeedResult struct {
-	Eligible         int
-	AnyReportCount   int
-	Nonreporting     Proportion
-	Median, P25, P75 time.Duration
+	Eligible       int        `json:"eligible"`
+	AnyReportCount int        `json:"any_report_count"`
+	Nonreporting   Proportion `json:"nonreporting"`
+	// MedianNs/P25Ns/P75Ns are time.Duration values in nanoseconds (Go's
+	// default JSON encoding for time.Duration, which has no unit marker of
+	// its own) — the _ns suffix makes that explicit in the API contract
+	// rather than leaving callers to guess the unit.
+	MedianNs time.Duration `json:"median_ns"`
+	P25Ns    time.Duration `json:"p25_ns"`
+	P75Ns    time.Duration `json:"p75_ns"`
 }
 
 // percentile computes p (in [0,1]) over a sorted slice using linear
@@ -288,9 +296,9 @@ func Speed(recipients []Recipient, window time.Duration) SpeedResult {
 		Nonreporting:   newProportion(eligible-len(reportTimes), eligible),
 	}
 	if len(reportTimes) > 0 {
-		result.Median = percentile(reportTimes, 0.5)
-		result.P25 = percentile(reportTimes, 0.25)
-		result.P75 = percentile(reportTimes, 0.75)
+		result.MedianNs = percentile(reportTimes, 0.5)
+		result.P25Ns = percentile(reportTimes, 0.25)
+		result.P75Ns = percentile(reportTimes, 0.75)
 	}
 	return result
 }

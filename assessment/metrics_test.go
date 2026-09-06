@@ -88,14 +88,14 @@ func TestSpeedFixture(t *testing.T) {
 	wantMedian := 7 * time.Hour
 	wantP25 := time.Duration(1.75 * float64(time.Hour))
 	wantP75 := 25 * time.Hour
-	if got.Median != wantMedian {
-		t.Errorf("median = %v, want %v", got.Median, wantMedian)
+	if got.MedianNs != wantMedian {
+		t.Errorf("median = %v, want %v", got.MedianNs, wantMedian)
 	}
-	if got.P25 != wantP25 {
-		t.Errorf("p25 = %v, want %v", got.P25, wantP25)
+	if got.P25Ns != wantP25 {
+		t.Errorf("p25 = %v, want %v", got.P25Ns, wantP25)
 	}
-	if got.P75 != wantP75 {
-		t.Errorf("p75 = %v, want %v", got.P75, wantP75)
+	if got.P75Ns != wantP75 {
+		t.Errorf("p75 = %v, want %v", got.P75Ns, wantP75)
 	}
 }
 
