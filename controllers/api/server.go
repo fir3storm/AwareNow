@@ -121,6 +121,7 @@ func (as *Server) registerRoutes() {
 	router.HandleFunc("/scenarios/{id:[0-9]+}/approve", mid.Use(as.ApproveScenario, mid.RequirePermission(models.PermissionModifyObjects))).Methods("POST")
 	router.HandleFunc("/assessments/", mid.Use(as.Assessments, mid.RequirePermission(models.PermissionModifyObjects)))
 	router.HandleFunc("/assessments/{id:[0-9]+}", mid.Use(as.AssessmentByID, mid.RequirePermission(models.PermissionModifyObjects)))
+	router.HandleFunc("/assessments/{id:[0-9]+}/phases", mid.Use(as.AssessmentPhaseHandler, mid.RequirePermission(models.PermissionModifyObjects)))
 
 	// Add a default handler for unsupported HTTP methods on all routes
 	router.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

@@ -93,6 +93,90 @@ func (as *Server) AssessmentByID(w http.ResponseWriter, r *http.Request) {
 	JSONResponse(w, a, http.StatusOK)
 }
 
+// AssessmentPhaseHandler handles the functionality for the
+// /api/assessments/{id}/phases endpoint, dispatching on method the same way
+// as Assessments and Templates.
+func (as *Server) AssessmentPhaseHandler(w http.ResponseWriter, r *http.Request) {
+	switch {
+	case r.Method == "GET":
+		as.AssessmentPhases(w, r)
+	case r.Method == "POST":
+		as.LinkAssessmentPhase(w, r)
+	default:
+		JSONResponse(w, models.Response{Success: false, Message: "Method not allowed"}, http.StatusMethodNotAllowed)
+	}
+}
+
+// LinkAssessmentPhase records that the given campaign delivers the given
+// phase of the given assessment. Calling it again for the same
+// (assessment, phase) pair updates the CampaignID rather than erroring or
+// duplicating.
+//
+// POST /api/assessments/{id}/phases
+// Body: {"phase": string, "campaign_id": int64}
+func (as *Server) LinkAssessmentPhase(w http.ResponseWriter, r *http.Request) {
+	uid := ctx.Get(r, "user_id").(int64)
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 0, 64)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Invalid ID"}, http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		Phase      string `json:"phase"`
+		CampaignID int64  `json:"campaign_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Invalid JSON structure"}, http.StatusBadRequest)
+		return
+	}
+
+	p, err := models.LinkAssessmentPhase(uid, id, body.Phase, body.CampaignID)
+	if err != nil {
+		assessmentPhaseLinkError(w, err)
+		return
+	}
+	JSONResponse(w, p, http.StatusOK)
+}
+
+// AssessmentPhases returns every phase linked so far for the given
+// assessment.
+// GET /api/assessments/{id}/phases
+func (as *Server) AssessmentPhases(w http.ResponseWriter, r *http.Request) {
+	uid := ctx.Get(r, "user_id").(int64)
+	id, err := strconv.ParseInt(mux.Vars(r)["id"], 0, 64)
+	if err != nil {
+		JSONResponse(w, models.Response{Success: false, Message: "Invalid ID"}, http.StatusBadRequest)
+		return
+	}
+	phases, err := models.GetAssessmentPhases(id, uid)
+	if err != nil {
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: "Error retrieving assessment phases"}, http.StatusInternalServerError)
+		return
+	}
+	JSONResponse(w, phases, http.StatusOK)
+}
+
+// assessmentPhaseLinkError maps each of LinkAssessmentPhase's specific error
+// sentinels to a distinct, clear response, matching assessmentCreateError's
+// style rather than collapsing them into one generic message.
+func assessmentPhaseLinkError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, models.ErrAssessmentPhaseInvalid):
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
+	case errors.Is(err, models.ErrAssessmentNotFound):
+		JSONResponse(w, models.Response{Success: false, Message: "Assessment not found"}, http.StatusNotFound)
+	case errors.Is(err, models.ErrAssessmentPhaseScenarioNotConfigured):
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
+	case errors.Is(err, models.ErrAssessmentPhaseCampaignNotFound):
+		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
+	default:
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: "Error linking assessment phase"}, http.StatusInternalServerError)
+	}
+}
+
 // assessmentCreateError maps each of CreateAssessment's specific error
 // sentinels to a distinct, clear message so a reviewer can tell exactly
 // which scenario reference is the problem, rather than a generic
