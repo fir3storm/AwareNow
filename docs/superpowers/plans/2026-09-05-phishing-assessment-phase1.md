@@ -37,6 +37,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-06 — USP-1 (measurement specification) shipped: docs/superpowers/specs/2026-09-06-usp-measurement-spec.md and the new `assessment` package, validated against a hand-checked fixture rather than trusting an agent to improvise statistical semantics. USP-2 (persisted Assessment/Scenario/Cohort schema) is the next dependency before USP-3/4 can build on this.
 - 2026-09-07 — USP-2 (Scenario/Assessment provenance model + API) shipped. A dedicated verification pass actively red-teamed the ValidateScenarioSafety sanitizer (not just re-running its own test suite) and found three real, verified-live bypasses — `<base>`-retargeted anchors, CSS url()/@import via `<style>`/`style=`, and `<img srcset>` — which were fixed and covered by new regression tests before this was marked complete. USP-3 (cohort assignment, campaign linkage, observation-window orchestration) is next.
 - 2026-09-07 — USP-3 (AssessmentPhase orchestration) shipped. Links a phase to an admin-created Campaign without ever launching one itself. A dedicated ownership-boundary review found and got fixed a real (minor, non-corrupting) concurrency gap in the idempotent upsert logic. USP-4 (evidence view/export) is next; USP-5 is a human buyer pilot, not implementation work.
+- 2026-09-07 — USP-4 (evidence view and export) shipped: a Go bridge from real Campaign/Result/Event data into USP-1's assessment package, a JSON/PDF/XLSX evidence-bundle endpoint, and a read-only React evidence view. A dedicated verification pass specifically checking export *content* (not just that a file downloads) caught the PDF/XLSX exports silently dropping most of the Speed metric — fixed, with a real content-reading regression test added. Also fixed the assessment package's Proportion/SpeedResult types, which had shipped with no JSON tags at all. USP-5 (buyer pilot) is explicitly left unchecked — it is not implementation work and requires the user to run it with real design partners.
 
 ---
 
@@ -328,11 +329,31 @@ export foundation, ahead of the broader P2 feature list; reuse P2 metrics work.
   the promised clean update — closed by re-selecting once after a failed
   create before giving up. Ownership scoping was independently re-traced
   end to end (SQL WHERE-clause level throughout, not a post-fetch check).
-- [ ] **USP-4: Evidence view and export.** Extend Go analytics and the React UI
+- [x] **USP-4: Evidence view and export.** Extend Go analytics and the React UI
   with baseline/follow-up comparisons, benign controls, uncertainty, and explicit
   limitations. Export a versioned JSON evidence bundle plus PDF/XLSX summary.
   Independent recomputation from exported aggregate counts must match the UI.
-- [ ] **USP-5: Buyer pilot.** Use an authorized test environment first, then
+  Done 2026-09-07: `models/assessment_evidence.go` bridges real
+  Campaign/Result/Event data into USP-1's `assessment` package; one code
+  path (`GetAssessmentEvidence`) produces the JSON bundle, the PDF/XLSX
+  summaries, and what the React evidence view renders — "independent
+  recomputation... must match the UI" holds structurally, since there is
+  only one computation, not a UI-side recalculation to drift from it. A
+  dedicated verification pass, asked to check actual export *content* and
+  not just magic bytes, caught a real gap (the PDF/XLSX exports silently
+  dropped most of the Speed metric) before this was marked done; fixed and
+  covered by a test that reads the generated XLSX back and checks the data,
+  not just that a file was produced. Along the way, also fixed the
+  `assessment` package's `Proportion`/`SpeedResult` types, which had never
+  had JSON tags and serialized as an inconsistent PascalCase island in an
+  otherwise snake_case API. Frontend scope was deliberately limited to a
+  read-only assessment list + evidence view — scenario/assessment creation
+  UI was never asked for in USP-2/3 and wasn't added here either.
+- [ ] **USP-5: Buyer pilot.** Not implementation work — no code to write here.
+  Requires the user to actually run this with real design partners once USP-4
+  gives them something to look at; a coding session cannot do this and did
+  not attempt to. Left unchecked and untouched.
+  Use an authorized test environment first, then
   evaluate with three consenting design partners. Require at least two partners
   to identify a concrete decision the evidence improves and express willingness
   to pay or renew. Record setup time and assessment-to-report effort against
