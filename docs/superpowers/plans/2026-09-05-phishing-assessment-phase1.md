@@ -35,6 +35,502 @@ _Append one line per shipped task. Do not edit history above this point — add 
 
 ---
 
+## Enhancement Roadmap Update — 2026-09-06
+
+**Status:** P0 is implemented and verified locally as recorded below; later milestones remain planned and no additional release is claimed.
+This section sets the next execution order and supplements Tasks 5–7 below.
+Keep the completed Tasks 1–4 and their historical progress entries intact.
+Retain the existing email-assessment scope; SMS and voice remain excluded.
+
+**Current product boundary (user clarification, 2026-09-06):** Both platforms
+operate independently. AwareNow owns phishing assessments, reporting, analytics,
+and its own AI configuration; AwareCheck retains its existing assessment and
+training capabilities. AwareNow does not build training modules. No shared login,
+employee synchronization, training requests, completion callbacks, or runtime
+dependency on AwareCheck is in the current delivery scope. The integration design
+below is preserved only as a deferred future option requiring a new go-ahead.
+
+### Pre-P0 baseline and evidence
+
+- Tasks 1–4 are recorded as shipped; the report model, intake handler, review
+  API, and React review page are present in the repository.
+- `models/reported_message.go` has no owner/tenant field; its list and lookup
+  queries are global. The review routes require `PermissionModifyObjects`,
+  which is insufficient to establish ownership of an individual report.
+- In `controllers/api/reported_message.go`, approval creates the template
+  before updating the report and returns success even if that update fails.
+  Rejection does not enforce a pending-only transition.
+- `controllers/phish.go` accepts unknown reports with a caller-supplied email;
+  the handler has no explicit request-body size cap or duplicate detection.
+- `controllers/api/analytics.go` still returns 501 for PDF/XLSX. The existing
+  Progress Log also records an unresolved template-client response mismatch.
+- `control-plane/src/serverDependencies.ts` explicitly supplies development-only
+  authentication and repositories. The management plane is a foundation,
+  not a completed production integration.
+
+These record the source-review findings before the P0 changes below. Historical
+Windows/cgo notes above are not evidence of this checkout's current build
+status; reproduce failures before choosing a dependency fix.
+
+### P0 — Reliable reporting and a verified baseline
+
+**Execution status: COMPLETE locally (2026-09-06).** Implementation and verification finished in the working tree.
+Completion means implemented and verified in the working tree; release/shipping
+is tracked separately. Unchecked later phases remain planned, not ongoing.
+
+| Workstream | Status | Verification / scope |
+| --- | --- | --- |
+| Baseline Go and control-plane checks | COMPLETE locally | Go tests/build; control-plane 44 tests/typecheck/build passed |
+| Report ownership and atomic review | COMPLETE locally | Owner-negative, concurrent approval, rollback, and legacy quarantine regressions passed |
+| Intake limits, idempotency, CORS | COMPLETE locally | Explicit configured owner; size, validation, retry, preflight, and rate-limit regressions passed |
+| Frontend template API contract | COMPLETE locally | Web lint, 9 tests, and build passed |
+| P1, standalone USP, AI configuration, P2/P3 | PLANNED | Begin after applicable prerequisites |
+| AwareCheck integration I1–I3 | DEFERRED | Excluded from current implementation |
+
+**Outcome:** Reviewers can trust report ownership and review results before
+report intake is rolled out more broadly. Suggested ownership: Go/API engineer
+with frontend support. Complete this milestone before the Outlook pilot.
+
+- [x] Run root `go test ./...` and `go build`; run `npm ci`, lint, tests, and
+  build in `web/`; run install, tests, typecheck, and build in `control-plane/`.
+  Record actual failures and fix reproducible blockers. Reconcile stale plan
+  statuses with evidence rather than checking them off from file presence.
+- [x] Define report ownership: use explicit engine/owner binding now and align
+  it with the [tenant contracts](../../architecture/control-plane-contracts.md).
+  Derive scope from trusted server configuration or authenticated identity,
+  never a submitted tenant ID or reporter email. Specify how existing unowned
+  reports are migrated or restricted to a designated administrator.
+- [x] Scope list, detail, approve, and reject queries consistently. Add tests
+  showing a second owner cannot read or mutate the first owner's reports.
+- [x] Make template creation and pending-to-approved transition transactional.
+  Use a conditional status update for approve/reject; handle conflicts, missing
+  records, and database failures explicitly.
+- [x] Add body/field limits, input validation, and scoped retry deduplication
+  without merging different reporters. Treat submitted identity as unverified
+  until authenticated. Preserve rate limiting and test actual CORS preflights.
+- [x] Fix the documented template response mismatch and add an API-contract
+  regression test for the report-to-template workflow.
+
+**Acceptance:** Concurrent approvals create exactly one template; rollback
+leaves no orphan template; approval/rejection cannot overwrite a completed
+decision; oversized requests are rejected; ownership-negative tests pass.
+
+**Local verification — 2026-09-06:** `go test ./...` and `go build`
+passed; web `npm ci`, lint, all 9 tests, and build passed; control-plane
+`npm ci`, all 44 tests, typecheck, and build passed. Report API tests also
+passed with `-race`. The reproduced Go failure was an Office ZIP fixture
+comparing compressed bytes; its test now compares every entry's exact
+uncompressed content. No Goose/SQLite compile failure occurred here.
+The existing web build warns about unprocessed Tailwind directives; that
+configuration issue remains outside this reporting milestone. Other campaign
+resource clients retain their pre-existing response-envelope assumptions.
+Control-plane installation reports three high-severity dependency findings.
+See [intake configuration and legacy-report recovery](../../report-intake.md).
+No commit, push, release, or mailbox pilot is claimed by this local completion.
+
+### P1 — Finish the reporting loop and usable exports
+
+**Outcome:** Employees can report mail and administrators can review and share
+assessment results. Dependencies: P0 for reporting; export implementation may
+proceed independently against verified owner-scoped analytics.
+
+- [ ] Refresh Task 5's Outlook design before implementation. Microsoft provides
+  an integrated spam-reporting extension with client-specific support:
+  [official implementation and supported-client guidance](https://learn.microsoft.com/en-us/office/dev/add-ins/outlook/spam-reporting).
+  Record the chosen manifest, supported clients, permissions, and fallback;
+  do not assume the older illustrative manifest covers every client.
+- [ ] Complete Task 5 with known-campaign and unknown-message paths, trusted
+  reporting-endpoint validation, clear success/failure feedback, and safe
+  retries. Test rid extraction against unrelated links, not just positive cases.
+  Run a controlled mailbox pilot before marking client integration complete.
+- [ ] Improve `web/src/pages/ReportedMessages/ReportedMessageList.tsx` with
+  server pagination, status/date/search filters, detail inspection, and visible
+  query/mutation errors. Preview untrusted content as text by default; any HTML
+  preview must prevent scripts, external loads, and active navigation.
+- [ ] Complete Tasks 6–7 and expose PDF/XLSX downloads in the UI. Verify library
+  compatibility with the supported Go matrix before selecting versions. Use
+  the same filters, time zone, and metric definitions across screen and exports.
+  Prevent spreadsheet formula interpretation of untrusted fields.
+
+**Acceptance:** Report → review → draft template works end to end without
+launching a campaign. Tests cover report retry, preview safety, and export
+authorization. Open generated PDF/XLSX files and verify empty, large, Unicode,
+and formula-like inputs; exported totals match the filtered dashboard fixture.
+
+### P2 — Better assessment insight and administration
+
+**Outcome:** Administrators can identify improvements across campaigns and
+operate reporting at a predictable cost. Start after a successful P1 pilot.
+
+- [ ] Add campaign/cohort comparisons, report rate, median time to report, and
+  repeat-click trends. Define denominators, attribution windows, and handling
+  of missing data; flag suspected automated interactions without silently
+  deleting raw observations. Avoid treating email opens as confirmed behavior.
+- [ ] Add reviewer assignment, notes, reason codes, and an audit trail. Keep
+  threat classification separate from approval to reuse a message as a template.
+- [ ] Add configurable retention for raw reported content, redaction before
+  template reuse, and authorized deletion with a documented backup policy.
+- [ ] Add request correlation, intake/review failure metrics, queue/backlog
+  monitoring, and a tested backup/restore runbook. Keep message bodies and
+  secrets out of operational logs.
+
+**Acceptance:** A deterministic campaign fixture produces documented metrics;
+audit records identify actor/action/time; retention tests cover expiry and
+owner isolation; a restore exercise recovers a usable test instance.
+
+### P3 — Production multi-tenant management
+
+Continue the existing [control-plane implementation plan](2026-09-05-awarenow-multitenant-control-plane.md)
+instead of creating a competing implementation track. This milestone can move
+earlier if serving multiple organizations becomes the immediate requirement.
+
+- [ ] Replace development dependencies with verified authentication, persistent
+  repositories, durable audit storage, and restart-safe provisioning jobs.
+- [ ] Establish explicit engine control-owner identity before mounting private
+  Go control routes; connect real tenant-aware UI data only after that boundary.
+- [ ] Add credential rotation, retry/idempotency handling, readiness checks,
+  tenant suspension, and migration/recovery procedures.
+
+**Acceptance:** Two-tenant integration tests deny cross-tenant access; data and
+audit history survive restart; provisioning retries do not duplicate engines;
+suspended tenants cannot perform prohibited operations. Demo fixtures and
+development authentication are excluded from production configuration.
+
+### Product USP — AwareNow Proof of Resilience
+
+**Proposed positioning:** “Turn the threats your people report into measurable
+proof that your organization is getting better at recognizing them.”
+
+**Target customer hypothesis:** Security teams and assessment consultancies
+that need defensible before/after evidence, with customer-controlled hosting.
+Validate this with five buyer interviews before investing in a broad suite.
+
+The flagship feature is an **Assessment Lab**: turn a reviewed incident into a
+sanitized scenario, define the recognition skill being tested, run a controlled
+assessment, and export an evidence-backed result. This extends the existing
+reported-message → template workflow into a measurement product.
+
+#### Competitive rationale and limits
+
+AI-generated messages, adaptive simulations, and report-to-template conversion
+are not sufficient differentiation. First-party sources reviewed on 2026-09-06:
+
+- [Hoxhunt phishing training](https://hoxhunt.com/product/phishing-training)
+  describes adaptive training using AI and behavioral data.
+- [KnowBe4 security awareness training](https://www.knowbe4.com/products/security-awareness-training)
+  describes personalized simulations and automated coaching.
+- [KnowBe4 SOC 3 report](https://www.knowbe4.com/hubfs/KnowBe4-2026-Type-2-SOC-3-Final-Report.pdf)
+  describes PhishFlip conversion of user-reported attacks into simulations.
+
+The differentiation hypothesis is the combined workflow: customer-specific
+incident provenance, explicit experimental design, legitimate-message controls,
+transparent uncertainty, and a reproducible evidence export in a self-hostable
+product. This source scan does not establish market exclusivity. Validate the
+combination in competitor demos and buyer interviews before claiming uniqueness.
+
+#### Flagship workflow
+
+1. A reviewer selects a reported incident, removes sensitive content, and
+   replaces active URLs/resources with controlled simulation assets.
+2. The reviewer tags a specific skill, such as identifying a sender-domain
+   mismatch, and creates versioned scenarios with comparable difficulty.
+3. An administrator defines cohorts, baseline, observation window, success
+   metric, and comparable baseline/follow-up assessment conditions.
+4. Participants receive approved simulated threats and, optionally, clearly
+   governed benign control messages. Responses are measured using the same
+   observation window; nonresponse is not automatically counted as safe behavior.
+5. A follow-up assessment uses an unseen variant to test transfer of the skill,
+   rather than recognition of the original template.
+6. The result explains observed change, uncertainty, and limitations, and exports
+   the underlying definitions and aggregate counts for independent review.
+
+Example demonstration: a reported invoice impersonation becomes a sanitized
+scenario. Comparable cohorts receive baseline and follow-up assessments using
+different scenario variants. The evidence report compares reporting before risky
+interaction and unnecessary reports of benign controls. The standalone product
+reports observed changes without claiming that a training intervention caused them.
+No result percentages should be shown as real until measured in a pilot.
+
+#### What the evidence report must show
+
+- **Recognition:** Share of eligible simulated-threat recipients who report
+  before a defined risky interaction within the observation window.
+- **Discrimination:** Benign-control reporting rate, displayed separately from
+  threat reporting. Do not use it to discourage reporting uncertain real mail.
+- **Recovery:** Reports made after a risky interaction, counted separately from
+  early detection so improvement is visible without rewriting the event history.
+- **Speed:** Time-to-report distribution plus the nonreporting proportion;
+  distinguish SMTP acceptance from confirmed delivery when delivery is unknown.
+- **Evidence quality:** Cohort sizes, exclusions, scenario versions, event
+  classification rules, missing observations, and uncertainty intervals.
+
+Avoid an opaque individual “risk score.” Report group outcomes; suppress small
+cohorts using a documented threshold. Suspected scanner activity remains labeled
+and auditable, with raw-versus-filtered aggregate results. A before/after change
+alone is observational; causal wording requires a justified comparison design.
+
+#### MVP implementation sequence
+
+Keep P0 as the first dependency. Build this flagship after P1's reporting and
+export foundation, ahead of the broader P2 feature list; reuse P2 metrics work.
+
+- [ ] **USP-1: Measurement specification.** Define metric denominators, event
+  precedence, deduplication, eligibility, missing-data handling, and uncertainty
+  methods. Validate calculations on hand-checkable fixtures. Review experiment
+  design for baseline differences and contamination between cohorts.
+- [ ] **USP-2: Provenance and scenarios.** Add owner-scoped assessment/scenario
+  records referencing reported-message and template IDs, sanitized versions,
+  skill tags, and reviewer approval. Retain only provenance necessary for audit.
+  Verify sanitized scenarios contain no live malicious destinations or secrets.
+- [ ] **USP-3: Assessment orchestration.** Persist cohort assignments, campaign
+  links, assessment conditions, and observation windows. Start with explicit
+  administrator setup and one recognition skill; no autonomous campaign launch.
+  Verify ownership, retry safety, and repeatable assignment.
+- [ ] **USP-4: Evidence view and export.** Extend Go analytics and the React UI
+  with baseline/follow-up comparisons, benign controls, uncertainty, and explicit
+  limitations. Export a versioned JSON evidence bundle plus PDF/XLSX summary.
+  Independent recomputation from exported aggregate counts must match the UI.
+- [ ] **USP-5: Buyer pilot.** Use an authorized test environment first, then
+  evaluate with three consenting design partners. Require at least two partners
+  to identify a concrete decision the evidence improves and express willingness
+  to pay or renew. Record setup time and assessment-to-report effort against
+  their existing process. These are proposed validation gates, not achieved results.
+
+**MVP boundary:** One email-based recognition skill, one baseline/follow-up
+comparison, optional benign controls, manual scenario review, and one evidence
+report. AI can later assist with sanitized scenario drafts or explanations;
+it is not the source of truth for metrics, attribution, or campaign approval.
+
+**Release gate:** P0/P1 checks pass; repeated imports do not inflate counts;
+two-owner tests enforce isolation; scanner/missing-event fixtures produce honest
+results; exports reproduce dashboard values; insufficient evidence is displayed
+instead of an unsupported improvement claim. Publish a synthetic demonstration
+with reproducible inputs before making marketing performance claims.
+
+### Platform-admin AI configuration — DeepSeek and CommandCode
+
+**User requirement:** The platform administrator adds API credentials and selects
+the provider and model through dropdowns. Support DeepSeek and CommandCode first.
+Prefer CommandCode's available free models for initial use. This is planned
+configuration work, not an API subscription, credential setup, or live API call.
+
+#### Admin experience
+
+- [ ] Add **Platform Settings → AI Providers** with provider dropdown
+  (`CommandCode`, `DeepSeek`), masked API-key input, enabled state, connection
+  status, **Test Connection**, **Refresh Models**, and **Save** actions.
+- [ ] Populate a searchable **Model** dropdown for the selected provider. Show
+  display name, exact model ID, supported capability, availability, and pricing
+  status (`Free`, `Paid`, `Unknown`) with its last verification time. Filter out
+  models unsupported by the implemented text-generation adapter.
+- [ ] Allow an administrator to set the platform default provider/model and an
+  allowed-model list. Persist provider and model together; switching provider
+  clears an incompatible model selection. Tenant users cannot modify platform
+  credentials or bypass the allowed-model policy.
+- [ ] Default initial setup to CommandCode with **Free models only** enabled.
+  Require an explicit model choice from the verified free options; do not guess
+  a permanent default model ID. If none are available, leave AI unavailable with
+  an actionable message while manual assessment features continue to work.
+- [ ] Support replace/revoke credentials without returning the stored key.
+  Display usage totals, rate-limit errors, and selected model status. Paid use
+  requires an explicit administrator policy change; never automatically fall
+  back from a free model to a paid model or to DeepSeek.
+
+#### Provider contracts and free-model verification
+
+Official references checked on 2026-09-06:
+
+- [DeepSeek API](https://api-docs.deepseek.com/) and
+  [model discovery](https://api-docs.deepseek.com/api/list-models): use the
+  documented authenticated model listing and text-generation API. Keep model
+  IDs dynamic rather than embedding today's catalog in the UI.
+- [CommandCode Provider API](https://commandcode.ai/docs/provider): base URL
+  `https://api.commandcode.ai/provider/v1`, discovery via `GET /models`.
+  Implement Chat Completions-compatible text models first; exclude models
+  requiring a different endpoint until their adapter is implemented.
+- [CommandCode pricing](https://commandcode.ai/docs/resources/pricing-limits):
+  verify current model pricing and account entitlement separately. A zero-cost
+  model does not establish that the account's API access is free. Promotions,
+  capacity limits, and plan eligibility can change.
+
+Do not infer price from a model-name suffix or assume the models endpoint
+includes pricing. Use authoritative pricing metadata when available; otherwise
+maintain a reviewed, expiring catalog with source and verification timestamp.
+Free-only mode blocks paid, unknown-price, or stale entries. Recheck eligibility
+before generation and surface unavailable/promotional-expiry errors. Application
+checks reduce unexpected charges but cannot guarantee provider billing; enforce
+provider-side spending limits where supported.
+
+#### Backend and implementation checklist
+
+- [ ] **AI-1: Authorized configuration.** Implement platform-admin-only settings
+  endpoints and durable configuration in the TypeScript control plane, using
+  verified authentication rather than its development principal stubs. This
+  requires the relevant authentication/persistence slice of P3, not all tenant
+  provisioning. Add server-side role checks to every configuration mutation.
+- [ ] **AI-2: Secrets and adapters.** Store keys through a secret manager or
+  encrypted storage with the encryption key outside the database. Make all
+  provider calls server-side through explicit DeepSeek/CommandCode adapters;
+  use fixed official hosts initially. Never expose keys in browser storage,
+  responses, logs, analytics, or exported reports.
+- [ ] **AI-3: Catalog and policy.** Implement cached model discovery, explicit
+  refresh, capability filtering, pricing verification, and server-enforced
+  provider/model allowlists. Handle revoked keys, removed models, and unavailable
+  catalogs without silently changing the selected model.
+- [ ] **AI-4: Assessment assistance.** Use the chosen model for reviewed scenario
+  drafts, skill-tag suggestions, and explanations of computed assessment
+  results. Send only sanitized, necessary inputs. Treat reported-email content
+  as untrusted data; AI output cannot execute tools, approve or launch campaigns,
+  calculate authoritative scores, or create AwareCheck training content.
+- [ ] **AI-5: Limits and verification.** Add bounded timeouts, rate limits,
+  concurrency/output-token caps, and limited retries. Audit configuration
+  changes and request provider/model/status/token usage without prompt bodies.
+  Test administrator versus tenant permissions, key masking/rotation, model
+  switching, discovery failure, pricing expiry, and rejection of paid fallback.
+  Use mocked providers for automated tests; a manual connection test must
+  distinguish credential validation from an optional generation test.
+
+**Acceptance:** An administrator can configure either provider, refresh and
+select a compatible model, save it, and generate a reviewed assessment draft
+through that exact provider/model. Settings survive restart, tenant users cannot
+retrieve credentials, and free-only mode rejects paid/unknown/stale models.
+Document any provider account requirement before the first live use.
+
+### Deferred future plan — AwareCheck integration (not current scope)
+
+**Status: Deferred by user instruction, 2026-09-06.** Preserve this research for
+future planning only. None of the integration checklists or milestones below
+is authorized for current implementation or a prerequisite for P0–P3, AI settings,
+or the standalone USP MVP. Each platform keeps its own users, authentication,
+data, configuration, reporting entry point, and release lifecycle. In particular,
+AwareNow's own Outlook reporting work remains in P1. Revalidate both repositories
+and agree on a new integration phase before activating this design.
+
+**Review scope:** Read-only inspection of local sibling checkout
+`../AwareCheck`, remote `https://github.com/fir3storm/awarecheck.git`, HEAD
+`10d1f49`. The checkout contains extensive uncommitted changes; findings describe
+that working tree, not verified remote or deployed behavior. No AwareCheck files
+were changed and no live integration or test suite was run for this review.
+
+#### Existing AwareCheck capabilities to reuse
+
+Paths below are relative to the AwareCheck repository:
+
+| Capability found | Source | Integration consequence |
+| --- | --- | --- |
+| Tenant-scoped employees with string IDs; email unique per tenant | `apps/api/src/database/models.py`, `User` | Keep AwareCheck as employee identity authority |
+| Employee category scores, risk/tier, workforce timeline, training history | `apps/web/src/features/workforce/WorkforceEmployeeAnalytics.tsx`, `types.ts`; `apps/api/src/modules/reports/service.py` | Enrich existing employee detail pages |
+| Suggestions, AI priority plans, assignment deduplication, lessons | `apps/api/src/modules/training/service.py`, `priority_plan_service.py`, `suggestion_router.py` | Reuse the existing recommendation and assignment loop |
+| Recommendation plans require internal attempt/campaign foreign keys | `apps/api/src/database/models.py`, `TrainingRecommendationPlan` | Add an external-source path; do not manufacture quiz attempts |
+| HMAC-signed outbound webhooks | `apps/api/src/modules/integrations/service.py`, `schemas.py` | Extend delivery contracts; current supported events omit `training.completed` |
+| Outlook reporting and confirmed-report category boosts | `apps/outlook-addin/`; `apps/api/src/modules/email_reports/scoring.py` | Coordinate intake and prevent duplicate reporting credit |
+
+AwareCheck also owns knowledge tests and their reassessments. AwareNow adds
+observed email-simulation behavior and independent phishing reassessment; it
+does not replace AwareCheck's existing assessment or training features.
+
+#### Employee experience and event loop
+
+1. Bind the two tenants and map each AwareNow recipient to an existing AwareCheck
+   `user_id`. Use tenant-scoped email only for initial reviewed matching; retain
+   stable IDs after mapping. Quarantine ambiguous/unmatched recipients. Handle
+   email changes, inactive users, deletion, and tenant disconnection explicitly.
+2. AwareNow records an outcome and emits a minimal authenticated event. AwareCheck
+   adds it to that employee's existing timeline and a new **Phishing behavior**
+   section: campaign/scenario, observed action, event confidence, reporting
+   latency, trend, and related training. Retain provenance and correction history.
+3. Map reliable behavior plus scenario skill tags to AwareCheck categories.
+   Current indices include Phishing `0`, Spear Phishing `1`, BEC `5`, Credential
+   Theft `6`, Social Engineering `7`, and Phishing Awareness `22`. Publish a
+   versioned semantic mapping; do not infer category from the click alone.
+4. AwareNow requests a recommendation referencing the evidence; AwareCheck
+   creates or updates its Suggested Interventions entry and ranks appropriate
+   lessons. Suggestions should appear promptly after accepted reliable evidence,
+   with a provisional target of 60 seconds at agreed pilot load. AI may improve
+   rationale/ranking; deterministic matching remains available when AI is down.
+5. Existing HR/admin approval assigns training in AwareCheck. Optional automatic
+   assignment is a separate tenant opt-in with approved categories, existing
+   lesson allowlists, cooldowns, and active-assignment deduplication. AwareNow
+   displays the recommendation and assignment status with an AwareCheck deep link.
+6. AwareCheck emits assignment/completion updates; AwareNow offers an approved
+   reassessment using a new scenario. Results flow back to the same employee
+   profile. Training completion alone is not evidence of improved behavior.
+
+Example: a reliable form-submission event in an approved credential-theft
+scenario creates a Credential Theft recommendation in AwareCheck. Existing
+matching training is reused instead of duplicated. Completion becomes visible
+in AwareNow, and a later phishing reassessment enriches the employee's timeline.
+Transmit the submission outcome only, never submitted passwords or field values.
+
+#### Proposed contract and consistency rules
+
+- [ ] Define versioned AwareNow events such as `assessment.outcome.recorded` and
+  `assessment.outcome.corrected`. Envelope: schema version, globally unique
+  event ID, tenant binding, mapped employee reference, campaign/scenario IDs,
+  recipient-attempt reference, occurrence time, outcome, confidence/classification,
+  skill tags, and optional superseded-event ID. Validate a strict safe-field list.
+- [ ] Add a tenant-bound service credential and proposed AwareCheck ingestion
+  endpoint under `/api/v1/integrations/awarenow/`; existing integration routes
+  manage outbound webhooks and are not an external outcome-ingestion API.
+  Bind tenant identity to credentials, reject replay/stale signatures, and use
+  durable outbox/inbox storage with unique source-event constraints and retries.
+- [ ] Add `training.completed` to AwareCheck's outbound event registry and emit
+  it transactionally from actual completion, alongside existing `training.assigned`.
+  Include external evidence/reference IDs and assignment IDs for correlation.
+  Add authenticated reconciliation for missed events; handle out-of-order updates.
+- [ ] Extend recommendation provenance to support internal quiz attempts OR
+  external assessment evidence, with database constraints and corresponding
+  service/UI changes. Preserve existing quiz behavior and dedupe across sources.
+- [ ] Preserve AwareCheck's existing quiz scores/tier initially. Show behavioral
+  evidence alongside them, not as an invented exam percentage. Any later combined
+  score requires an explicit versioned scoring policy and validation. Coordinate
+  existing confirmed-report boosts to credit a shared report only once.
+- [ ] Reuse AwareCheck's Outlook reporting entry point where practical: route
+  validated AwareNow campaign reports to AwareNow; keep real-email review in
+  AwareCheck with explicit forwarding for sanitized scenario reuse. Use shared
+  correlation IDs; choose a single intake owner before shipping two report buttons.
+- [ ] Keep AI credentials within each product's backend. AwareNow sends evidence
+  and recommendation requests, not its platform API keys; AwareCheck retains
+  control of its lesson catalog, language, ranking, and training generation.
+
+#### Integration milestones and acceptance
+
+**I1 — Readable employee evidence:** Tenant mapping, durable event ingestion,
+profile section, and timeline. Test two-tenant isolation, renamed employees,
+unmapped IDs, replay, corrections, and deletion. Repeated delivery creates one
+logical observation; uncertain scanner events never trigger training.
+
+**I2 — On-the-fly suggestions:** External recommendation provenance, category
+mapping, AwareCheck ranking/fallback, and AwareNow status/deep links. Verify the
+same employee/category does not receive duplicate active training and manual
+approval remains the default. Measure the event-to-suggestion latency target.
+
+**I3 — Completion and reassessment:** Completion webhook, reconciliation,
+reassessment linkage, and shared before/after evidence. Demonstrate one mapped
+employee from simulation outcome through AwareCheck completion to AwareNow
+reassessment, including an outage/retry exercise without duplicated credit.
+
+If integration is explicitly reactivated in the future, sequence I1 before I2
+and I3 after verifying authenticated persistence in both products. These phases
+extend the standalone USP; they do not block its release. When implementation touches AwareCheck, update
+its required `docs/FEATURE_CATALOG.md` and focused workforce, suggestion,
+completion, scoring, and webhook tests in the same change.
+
+### Delivery and completion rules
+
+Implement P0 first, then P1, then the USP MVP, then remaining P2 work; use the
+separate control-plane plan for P3.
+Schedule AI configuration after P0 and the platform-admin authentication and
+persistence slice; it may proceed alongside P1. The USP's deterministic metrics
+must remain usable without AI or AwareCheck. Exclude I1–I3 and all cross-platform
+integration work from current delivery; training integration remains a future
+option only.
+Size each checklist item after reproducing the baseline; calendar estimates
+remain unset until capacity and integration constraints are known. For every
+completed item, record the commit, tests, and remaining limitations. Add a
+shipped-task Progress Log entry only when it actually ships. This planning
+update does not authorize deployment or sending a live campaign.
+
 ## Task 1: `ReportedMessage` data model
 
 **Files:**
