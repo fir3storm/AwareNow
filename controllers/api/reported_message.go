@@ -20,7 +20,7 @@ func (as *Server) ReportedMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status := r.URL.Query().Get("status")
-	msgs, err := models.GetReportedMessages(status)
+	msgs, err := models.GetReportedMessages(ctx.Get(r, "user_id").(int64), status)
 	if err != nil {
 		log.Error(err)
 		JSONResponse(w, models.Response{Success: false, Message: "Error retrieving reported messages"}, http.StatusInternalServerError)
@@ -41,9 +41,9 @@ func (as *Server) ReportedMessage(w http.ResponseWriter, r *http.Request) {
 		JSONResponse(w, models.Response{Success: false, Message: "Invalid ID"}, http.StatusBadRequest)
 		return
 	}
-	rm, err := models.GetReportedMessageByID(id)
+	rm, err := models.GetReportedMessageByID(id, ctx.Get(r, "user_id").(int64))
 	if err != nil {
-		JSONResponse(w, models.Response{Success: false, Message: "Reported message not found"}, http.StatusNotFound)
+		reportedMessageError(w, err)
 		return
 	}
 	JSONResponse(w, rm, http.StatusOK)
@@ -63,9 +63,10 @@ func (as *Server) ReportedMessageApprove(w http.ResponseWriter, r *http.Request)
 		JSONResponse(w, models.Response{Success: false, Message: "Invalid ID"}, http.StatusBadRequest)
 		return
 	}
-	rm, err := models.GetReportedMessageByID(id)
+	uid := ctx.Get(r, "user_id").(int64)
+	rm, err := models.GetReportedMessageByID(id, uid)
 	if err != nil {
-		JSONResponse(w, models.Response{Success: false, Message: "Reported message not found"}, http.StatusNotFound)
+		reportedMessageError(w, err)
 		return
 	}
 	if rm.Status != models.ReportedMessageStatusPending {
@@ -87,7 +88,6 @@ func (as *Server) ReportedMessageApprove(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	uid := ctx.Get(r, "user_id").(int64)
 	tmpl := models.Template{
 		UserId:  uid,
 		Name:    body.Name,
@@ -95,15 +95,16 @@ func (as *Server) ReportedMessageApprove(w http.ResponseWriter, r *http.Request)
 		Text:    text,
 		HTML:    html,
 	}
-	if err := models.PostTemplate(&tmpl); err != nil {
+	if err := tmpl.Validate(); err != nil {
 		log.Error(err)
 		JSONResponse(w, models.Response{Success: false, Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	reviewedBy := ctx.Get(r, "user").(models.User).Username
-	if err := models.UpdateReportedMessageStatus(id, models.ReportedMessageStatusApproved, reviewedBy, tmpl.Id); err != nil {
-		log.Error(err)
+	if err := models.ApproveReportedMessage(id, uid, reviewedBy, &tmpl); err != nil {
+		reportedMessageError(w, err)
+		return
 	}
 	JSONResponse(w, tmpl, http.StatusOK)
 }
@@ -121,12 +122,23 @@ func (as *Server) ReportedMessageReject(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	reviewedBy := ctx.Get(r, "user").(models.User).Username
-	if err := models.UpdateReportedMessageStatus(id, models.ReportedMessageStatusRejected, reviewedBy, 0); err != nil {
-		log.Error(err)
-		JSONResponse(w, models.Response{Success: false, Message: "Error updating reported message"}, http.StatusInternalServerError)
+	if err := models.RejectReportedMessage(id, ctx.Get(r, "user_id").(int64), reviewedBy); err != nil {
+		reportedMessageError(w, err)
 		return
 	}
 	JSONResponse(w, models.Response{Success: true, Message: "Reported message rejected"}, http.StatusOK)
+}
+
+func reportedMessageError(w http.ResponseWriter, err error) {
+	switch err {
+	case models.ErrReportedMessageNotFound:
+		JSONResponse(w, models.Response{Success: false, Message: "Reported message not found"}, http.StatusNotFound)
+	case models.ErrReportedMessageReviewed:
+		JSONResponse(w, models.Response{Success: false, Message: "Reported message already reviewed"}, http.StatusConflict)
+	default:
+		log.Error(err)
+		JSONResponse(w, models.Response{Success: false, Message: "Error processing reported message"}, http.StatusInternalServerError)
+	}
 }
 
 // rawEmailFromParts builds a minimal raw RFC 822 message from already-split

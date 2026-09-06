@@ -24,6 +24,9 @@ type PhishServer struct {
 	UseTLS    bool   `json:"use_tls"`
 	CertPath  string `json:"cert_path"`
 	KeyPath   string `json:"key_path"`
+	// ReportOwnerID binds public unknown-message reports to an explicit local
+	// user. Zero disables intake; the sender cannot choose the owner.
+	ReportOwnerID int64 `json:"report_owner_id"`
 }
 
 // Config represents the configuration information.

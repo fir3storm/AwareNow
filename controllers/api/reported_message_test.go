@@ -36,6 +36,7 @@ func createUserWithoutPermissions(t *testing.T, username, apiKey string) *models
 // package (bypassing HTTP) so tests can focus on the handlers under test.
 func seedReportedMessage(t *testing.T) models.ReportedMessage {
 	rm := models.ReportedMessage{
+		OwnerID:       1,
 		ReporterEmail: "bob@example.com",
 		Subject:       "Test",
 		BodyHTML:      `<p><a href="http://evil.example">link</a></p>`,
@@ -112,7 +113,7 @@ func TestReportedMessagesApprove(t *testing.T) {
 		t.Fatalf("expected non-zero template id, got %d", tmpl.Id)
 	}
 
-	updated, err := models.GetReportedMessageByID(rm.ID)
+	updated, err := models.GetReportedMessageByID(rm.ID, 1)
 	if err != nil {
 		t.Fatalf("error getting reported message by id: %v", err)
 	}
@@ -138,7 +139,7 @@ func TestReportedMessagesReject(t *testing.T) {
 		t.Fatalf("unexpected status code received rejecting reported message. expected %d got %d", http.StatusOK, w.Code)
 	}
 
-	updated, err := models.GetReportedMessageByID(rm.ID)
+	updated, err := models.GetReportedMessageByID(rm.ID, 1)
 	if err != nil {
 		t.Fatalf("error getting reported message by id: %v", err)
 	}
@@ -180,5 +181,106 @@ func TestReportedMessagesRequiresPermission(t *testing.T) {
 	expected := http.StatusForbidden
 	if w.Code != expected {
 		t.Fatalf("unexpected status code received. expected %d got %d", expected, w.Code)
+	}
+}
+
+func TestReportedMessagesOwnerIsolation(t *testing.T) {
+	testCtx := setupTest(t)
+	rm := seedReportedMessage(t)
+	other := createUnpriviledgedUser(t, models.RoleUser)
+	for _, route := range []struct{ method, suffix string }{
+		{http.MethodGet, ""}, {http.MethodPost, "/approve"}, {http.MethodPost, "/reject"},
+	} {
+		r := httptest.NewRequest(route.method, fmt.Sprintf("/api/reported-messages/%d%s", rm.ID, route.suffix), bytes.NewBufferString(`{"name":"Foreign"}`))
+		r.Header.Set("Authorization", "Bearer "+other.ApiKey)
+		w := httptest.NewRecorder()
+		testCtx.apiServer.ServeHTTP(w, r)
+		if w.Code != http.StatusNotFound {
+			t.Fatalf("%s %s: expected 404, got %d: %s", route.method, route.suffix, w.Code, w.Body.String())
+		}
+	}
+	for _, filter := range []string{"", "?status=pending"} {
+		r := httptest.NewRequest(http.MethodGet, "/api/reported-messages/"+filter, nil)
+		r.Header.Set("Authorization", "Bearer "+other.ApiKey)
+		w := httptest.NewRecorder()
+		testCtx.apiServer.ServeHTTP(w, r)
+		var reports []models.ReportedMessage
+		if w.Code != http.StatusOK || json.Unmarshal(w.Body.Bytes(), &reports) != nil || len(reports) != 0 {
+			t.Fatalf("foreign list exposed reports: %d %s", w.Code, w.Body.String())
+		}
+	}
+	stored, err := models.GetReportedMessageByID(rm.ID, 1)
+	if err != nil || stored.Status != models.ReportedMessageStatusPending {
+		t.Fatalf("foreign review changed report: %+v, %v", stored, err)
+	}
+	templates, err := models.GetTemplates(other.Id)
+	if err != nil || len(templates) != 0 {
+		t.Fatalf("foreign review created templates: %+v, %v", templates, err)
+	}
+}
+
+func TestReportedMessagesConcurrentApproval(t *testing.T) {
+	testCtx := setupTest(t)
+	rm := seedReportedMessage(t)
+	const reviewers = 8
+	start := make(chan struct{})
+	responses := make(chan *httptest.ResponseRecorder, reviewers)
+	for i := 0; i < reviewers; i++ {
+		go func() {
+			<-start
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/reported-messages/%d/approve", rm.ID), bytes.NewBufferString(`{"name":"Concurrent approval"}`))
+			r.Header.Set("Authorization", "Bearer "+testCtx.apiKey)
+			w := httptest.NewRecorder()
+			testCtx.apiServer.ServeHTTP(w, r)
+			responses <- w
+		}()
+	}
+	close(start)
+	successes := 0
+	for i := 0; i < reviewers; i++ {
+		w := <-responses
+		if w.Code == http.StatusOK {
+			successes++
+		} else if w.Code != http.StatusConflict {
+			t.Errorf("expected success or conflict, got %d: %s", w.Code, w.Body.String())
+		}
+	}
+	templates, err := models.GetTemplates(1)
+	if err != nil || successes != 1 || len(templates) != 1 {
+		t.Fatalf("expected one approval and template; successes=%d templates=%d error=%v", successes, len(templates), err)
+	}
+	stored, err := models.GetReportedMessageByID(rm.ID, 1)
+	if err != nil || stored.ConvertedTemplateID != templates[0].Id || stored.Status != models.ReportedMessageStatusApproved {
+		t.Fatalf("approval/template mismatch: %+v, %v", stored, err)
+	}
+}
+
+func TestReportedMessagesTerminalReviewConflicts(t *testing.T) {
+	for _, decision := range []string{"approve", "reject"} {
+		t.Run(decision, func(t *testing.T) {
+			testCtx := setupTest(t)
+			rm := seedReportedMessage(t)
+			for i, action := range []string{decision, "approve", "reject"} {
+				r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/api/reported-messages/%d/%s", rm.ID, action), bytes.NewBufferString(`{"name":"Terminal review"}`))
+				r.Header.Set("Authorization", "Bearer "+testCtx.apiKey)
+				w := httptest.NewRecorder()
+				testCtx.apiServer.ServeHTTP(w, r)
+				want := http.StatusConflict
+				if i == 0 {
+					want = http.StatusOK
+				}
+				if w.Code != want {
+					t.Fatalf("%s after %s: expected %d, got %d: %s", action, decision, want, w.Code, w.Body.String())
+				}
+			}
+			stored, err := models.GetReportedMessageByID(rm.ID, 1)
+			wantStatus := models.ReportedMessageStatusApproved
+			if decision == "reject" {
+				wantStatus = models.ReportedMessageStatusRejected
+			}
+			if err != nil || stored.Status != wantStatus {
+				t.Fatalf("terminal decision changed: %+v, %v", stored, err)
+			}
+		})
 	}
 }

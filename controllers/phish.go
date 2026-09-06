@@ -122,7 +122,7 @@ func (ps *PhishingServer) registerRoutes() {
 	router.HandleFunc("/{path:.*}/track", ps.TrackHandler)
 	router.HandleFunc("/{path:.*}/report", ps.ReportHandler)
 	router.HandleFunc("/report", ps.ReportHandler)
-	router.HandleFunc("/report-unknown", mid.Use(ps.ReportUnknownHandler, ps.limiter.Limit)).Methods("POST")
+	router.HandleFunc("/report-unknown", mid.Use(ps.ReportUnknownHandler, ps.limiter.Limit, reportIntakeCORS)).Methods("POST", "OPTIONS")
 	// Behavior events endpoint on phishing server
 	router.HandleFunc("/api/behavior-events", ps.BehaviorEventsHandler).Methods("POST")
 	router.HandleFunc("/{path:.*}/api/behavior-events", ps.BehaviorEventsHandler).Methods("POST")
@@ -453,39 +453,6 @@ func (ps *PhishingServer) ReportHandler(w http.ResponseWriter, r *http.Request) 
 	err = rs.HandleEmailReport(d)
 	if err != nil {
 		log.Error(err)
-	}
-	w.WriteHeader(http.StatusNoContent)
-}
-
-// ReportUnknownHandler accepts a report of a real, non-campaign suspicious
-// email (one with no AwareNow tracking rid). It stores the report for admin
-// review; it does not touch any Result or campaign.
-func (ps *PhishingServer) ReportUnknownHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "*") // same rationale as ReportHandler: external reporting clients
-	var payload struct {
-		ReporterEmail string `json:"reporter_email"`
-		Subject       string `json:"subject"`
-		BodyText      string `json:"body_text"`
-		BodyHTML      string `json:"body_html"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "invalid request", http.StatusBadRequest)
-		return
-	}
-	if payload.ReporterEmail == "" || (payload.BodyText == "" && payload.BodyHTML == "") {
-		http.Error(w, "invalid request", http.StatusBadRequest)
-		return
-	}
-	rm := &models.ReportedMessage{
-		ReporterEmail: payload.ReporterEmail,
-		Subject:       payload.Subject,
-		BodyText:      payload.BodyText,
-		BodyHTML:      payload.BodyHTML,
-	}
-	if err := models.CreateReportedMessage(rm); err != nil {
-		log.Error(err)
-		http.Error(w, "internal server error", http.StatusInternalServerError)
-		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
