@@ -35,6 +35,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-06 — Tasks 6-7 (PDF/XLSX analytics export) shipped, plus a frontend export UI and two more instances of the templates.ts-style response-envelope bug (web/src/api/analytics.ts, campaigns.ts) fixed in Dashboard.tsx. Added spreadsheet formula-injection sanitization for the one user-controlled string field (DepartmentStats.Department) written into the XLSX export. Pinned excelize to v2.9.0 instead of latest v2.11.0 to avoid an unnecessary go.mod bump from go 1.21 to go 1.25.
 - 2026-09-06 — Task 5 (Outlook add-in) implemented and locally verified via subagent swarm, refreshed against Microsoft's actual current spam-reporting spec (the plan's original sketch used the wrong extension point/event model). A human mailbox pilot is still required before it's considered complete. Also shipped, in parallel: server-side pagination/search/date filters for the reported-messages API (a deliberate, documented envelope exception — {data,total,page,per_page}, unlike the bare-array convention elsewhere), and the corresponding ReportedMessageList UI (filters, pagination, a detail view, and a dependency-free sandboxed-iframe+CSP safe HTML preview for untrusted report bodies).
 - 2026-09-06 — USP-1 (measurement specification) shipped: docs/superpowers/specs/2026-09-06-usp-measurement-spec.md and the new `assessment` package, validated against a hand-checked fixture rather than trusting an agent to improvise statistical semantics. USP-2 (persisted Assessment/Scenario/Cohort schema) is the next dependency before USP-3/4 can build on this.
+- 2026-09-07 — USP-2 (Scenario/Assessment provenance model + API) shipped. A dedicated verification pass actively red-teamed the ValidateScenarioSafety sanitizer (not just re-running its own test suite) and found three real, verified-live bypasses — `<base>`-retargeted anchors, CSS url()/@import via `<style>`/`style=`, and `<img srcset>` — which were fixed and covered by new regression tests before this was marked complete. USP-3 (cohort assignment, campaign linkage, observation-window orchestration) is next.
 
 ---
 
@@ -292,10 +293,23 @@ export foundation, ahead of the broader P2 feature list; reuse P2 metrics work.
   both phases of one assessment, which is expected, not contamination) —
   not yet stress-tested against a real multi-phase dataset, since no
   Assessment/Cohort schema exists yet (USP-2).
-- [ ] **USP-2: Provenance and scenarios.** Add owner-scoped assessment/scenario
+- [x] **USP-2: Provenance and scenarios.** Add owner-scoped assessment/scenario
   records referencing reported-message and template IDs, sanitized versions,
   skill tags, and reviewer approval. Retain only provenance necessary for audit.
   Verify sanitized scenarios contain no live malicious destinations or secrets.
+  Done 2026-09-06/07: `models/scenario.go` (provenance to the source
+  ReportedMessage, mandatory reviewer approval separate from the mechanical
+  check), `models/assessment.go` (references approved scenarios by role/kind),
+  and the `controllers/api` handler layer. "Verify... no live malicious
+  destinations" was taken literally: an internal review actively tried to
+  bypass `ValidateScenarioSafety` and found three real, verified-live
+  bypasses (a `<base>` tag retargeting an in-page anchor, CSS `url()`/`@import`
+  via `<style>`/`style=`, and `<img srcset>`), which were fixed and covered
+  by regression tests before this was marked done — not merely "checked
+  that a function exists." "No secrets": the function cannot verify this in
+  any general sense; that judgment remains the human reviewer's job via the
+  separate approval step, documented as such in the code rather than
+  overclaimed.
 - [ ] **USP-3: Assessment orchestration.** Persist cohort assignments, campaign
   links, assessment conditions, and observation windows. Start with explicit
   administrator setup and one recognition skill; no autonomous campaign launch.
