@@ -34,6 +34,7 @@ _Append one line per shipped task. Do not edit history above this point — add 
 - 2026-09-05 — Task 4 (Reported Messages web UI) shipped. Built this repo's first test harness for a useQuery-based component (a per-test QueryClientProvider wrapper) since none existed. Confirmed the new API client correctly reads raw response bodies rather than copying a pre-existing, out-of-scope bug in web/src/api/templates.ts that assumes a {success,message,data} envelope the real backend doesn't send for that endpoint.
 - 2026-09-06 — Tasks 6-7 (PDF/XLSX analytics export) shipped, plus a frontend export UI and two more instances of the templates.ts-style response-envelope bug (web/src/api/analytics.ts, campaigns.ts) fixed in Dashboard.tsx. Added spreadsheet formula-injection sanitization for the one user-controlled string field (DepartmentStats.Department) written into the XLSX export. Pinned excelize to v2.9.0 instead of latest v2.11.0 to avoid an unnecessary go.mod bump from go 1.21 to go 1.25.
 - 2026-09-06 — Task 5 (Outlook add-in) implemented and locally verified via subagent swarm, refreshed against Microsoft's actual current spam-reporting spec (the plan's original sketch used the wrong extension point/event model). A human mailbox pilot is still required before it's considered complete. Also shipped, in parallel: server-side pagination/search/date filters for the reported-messages API (a deliberate, documented envelope exception — {data,total,page,per_page}, unlike the bare-array convention elsewhere), and the corresponding ReportedMessageList UI (filters, pagination, a detail view, and a dependency-free sandboxed-iframe+CSP safe HTML preview for untrusted report bodies).
+- 2026-09-06 — USP-1 (measurement specification) shipped: docs/superpowers/specs/2026-09-06-usp-measurement-spec.md and the new `assessment` package, validated against a hand-checked fixture rather than trusting an agent to improvise statistical semantics. USP-2 (persisted Assessment/Scenario/Cohort schema) is the next dependency before USP-3/4 can build on this.
 
 ---
 
@@ -276,10 +277,21 @@ alone is observational; causal wording requires a justified comparison design.
 Keep P0 as the first dependency. Build this flagship after P1's reporting and
 export foundation, ahead of the broader P2 feature list; reuse P2 metrics work.
 
-- [ ] **USP-1: Measurement specification.** Define metric denominators, event
+- [x] **USP-1: Measurement specification.** Define metric denominators, event
   precedence, deduplication, eligibility, missing-data handling, and uncertainty
   methods. Validate calculations on hand-checkable fixtures. Review experiment
   design for baseline differences and contamination between cohorts.
+  Done 2026-09-06: docs/superpowers/specs/2026-09-06-usp-measurement-spec.md
+  defines Recognition/Discrimination/Recovery/Speed precisely against the
+  existing Campaign/Result/Event model; the `assessment` package implements
+  the arithmetic and validates it against a hand-checked 12-recipient
+  fixture (every expected number, including Wilson interval bounds,
+  independently verified by script before being written into the spec).
+  Baseline-vs-follow-up contamination is addressed structurally (§1: a
+  cohort is scoped per assessment phase; the same person may appear in
+  both phases of one assessment, which is expected, not contamination) —
+  not yet stress-tested against a real multi-phase dataset, since no
+  Assessment/Cohort schema exists yet (USP-2).
 - [ ] **USP-2: Provenance and scenarios.** Add owner-scoped assessment/scenario
   records referencing reported-message and template IDs, sanitized versions,
   skill tags, and reviewer approval. Retain only provenance necessary for audit.
