@@ -177,9 +177,10 @@ func (as *Server) ExportAnalytics(w http.ResponseWriter, r *http.Request) {
 		exportCSV(w, r, uid)
 	case "json":
 		exportJSON(w, r, uid)
-	case "pdf", "xlsx":
-		// PDF and XLSX export would require additional libraries
-		JSONResponse(w, models.Response{Success: false, Message: fmt.Sprintf("Format '%s' export not yet implemented. Use 'csv' or 'json'.", format)}, http.StatusNotImplemented)
+	case "pdf":
+		exportPDF(w, r, uid)
+	case "xlsx":
+		exportXLSX(w, r, uid)
 	default:
 		JSONResponse(w, models.Response{Success: false, Message: "Unsupported format. Use 'csv', 'json', 'pdf', or 'xlsx'."}, http.StatusBadRequest)
 	}
