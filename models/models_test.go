@@ -41,6 +41,8 @@ func (s *ModelsSuite) TearDownTest(c *check.C) {
 	db.Delete(MailLog{})
 	db.Delete(Campaign{})
 	db.Delete(ReportedMessage{})
+	db.Delete(Assessment{})
+	db.Delete(Scenario{})
 
 	// Reset users table to default state.
 	db.Not("id", 1).Delete(User{})

@@ -258,6 +258,8 @@ func Setup(c *config.Config) error {
 	autoMigrateMultiSMTP()
 	// Auto-migrate reported message tables
 	autoMigrateReportedMessages()
+	// Auto-migrate scenario and assessment tables
+	autoMigrateScenariosAndAssessments()
 	return nil
 }
 
@@ -284,4 +286,13 @@ func autoMigrateMultiSMTP() {
 // SQL migration file for this table; GORM's AutoMigrate is sufficient here.
 func autoMigrateReportedMessages() {
 	db.AutoMigrate(&ReportedMessage{})
+}
+
+// autoMigrateScenariosAndAssessments ensures the scenarios and assessments
+// tables exist in the database using GORM's AutoMigrate. This is a safety
+// net alongside the goose SQL migration in
+// db/db_<driver>/migrations/20260906120000_scenarios_and_assessments.sql.
+func autoMigrateScenariosAndAssessments() {
+	db.AutoMigrate(&Scenario{})
+	db.AutoMigrate(&Assessment{})
 }
