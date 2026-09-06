@@ -11,16 +11,16 @@ interface CreateTemplateRequest {
 
 export const templatesApi = {
   getAll: () =>
-    client.get<ApiResponse<Template[]>>('/templates/'),
+    client.get<Template[]>('/templates/'),
 
   getById: (id: number) =>
-    client.get<ApiResponse<Template>>(`/templates/${id}`),
+    client.get<Template>(`/templates/${id}`),
 
   create: (data: CreateTemplateRequest) =>
-    client.post<ApiResponse<Template>>('/templates/', data),
+    client.post<Template>('/templates/', data),
 
   update: (id: number, data: Partial<CreateTemplateRequest>) =>
-    client.put<ApiResponse<Template>>(`/templates/${id}`, data),
+    client.put<Template>(`/templates/${id}`, { ...data, id }),
 
   delete: (id: number) =>
     client.delete<ApiResponse<null>>(`/templates/${id}`),

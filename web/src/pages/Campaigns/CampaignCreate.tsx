@@ -25,7 +25,7 @@ export function CampaignCreate() {
     queryKey: ['templates'],
     queryFn: async () => {
       const res = await templatesApi.getAll();
-      return res.data.data;
+      return res.data;
     },
   });
 

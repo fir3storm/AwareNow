@@ -21,7 +21,7 @@ export function ReportedMessageList() {
   });
   const [templateName, setTemplateName] = useState('');
 
-  const { data: reportedMessages, isLoading } = useQuery({
+  const { data: reportedMessages, isLoading, isError } = useQuery({
     queryKey: ['reportedMessages'],
     queryFn: async () => {
       const res = await reportedMessagesApi.getAll();
@@ -33,6 +33,7 @@ export function ReportedMessageList() {
     mutationFn: ({ id, name }: { id: number; name: string }) => reportedMessagesApi.approve(id, name),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reportedMessages'] });
+      queryClient.invalidateQueries({ queryKey: ['templates'] });
       setApproveModal({ open: false, message: null });
     },
   });
@@ -45,6 +46,7 @@ export function ReportedMessageList() {
   });
 
   const openApproveModal = (message: ReportedMessage) => {
+    approveMutation.reset();
     setTemplateName(`From report: ${message.subject}`);
     setApproveModal({ open: true, message });
   };
@@ -127,8 +129,14 @@ export function ReportedMessageList() {
         </div>
       </div>
 
+      {rejectMutation.isError && (
+        <p role="alert" className="text-red-700">Could not reject this report. Refresh the queue and try again.</p>
+      )}
+
       <Card>
-        {isLoading ? (
+        {isError ? (
+          <p role="alert" className="text-red-700">Could not load reported messages. Refresh the page to try again.</p>
+        ) : isLoading ? (
           <div className="animate-pulse space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-12 bg-gray-100 rounded"></div>
@@ -153,13 +161,17 @@ export function ReportedMessageList() {
         <p className="text-gray-600 mb-4">
           Convert "{approveModal.message?.subject}" into a new email template.
         </p>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Template name</label>
+        <label htmlFor="report-template-name" className="block text-sm font-medium text-gray-700 mb-1">Template name</label>
         <input
+          id="report-template-name"
           type="text"
           value={templateName}
           onChange={(e) => setTemplateName(e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+        {approveMutation.isError && (
+          <p role="alert" className="text-red-700 mb-4">Could not approve this report. Check the template name or refresh the queue before trying again.</p>
+        )}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setApproveModal({ open: false, message: null })}>
             Cancel

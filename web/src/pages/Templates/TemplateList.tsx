@@ -15,11 +15,11 @@ export function TemplateList() {
     template: null,
   });
 
-  const { data: templates, isLoading } = useQuery({
+  const { data: templates, isLoading, isError } = useQuery({
     queryKey: ['templates'],
     queryFn: async () => {
       const res = await templatesApi.getAll();
-      return res.data.data;
+      return res.data;
     },
   });
 
@@ -91,7 +91,9 @@ export function TemplateList() {
       </div>
 
       <Card>
-        {isLoading ? (
+        {isError ? (
+          <p role="alert" className="text-red-700">Could not load templates. Refresh the page to try again.</p>
+        ) : isLoading ? (
           <div className="animate-pulse space-y-4">
             {[...Array(5)].map((_, i) => (
               <div key={i} className="h-12 bg-gray-100 rounded"></div>
