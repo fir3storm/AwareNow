@@ -16,9 +16,25 @@ export interface ReportedMessage {
   reviewed_at: string;
 }
 
+export interface ReportedMessageListParams {
+  status?: ReportedMessageStatus;
+  search?: string;
+  created_after?: string; // RFC3339
+  created_before?: string; // RFC3339
+  page?: number;
+  per_page?: number;
+}
+
+export interface ReportedMessageListResponse {
+  data: ReportedMessage[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
 export const reportedMessagesApi = {
-  getAll: (status?: ReportedMessageStatus) =>
-    client.get<ReportedMessage[]>('/reported-messages/', { params: status ? { status } : undefined }),
+  getAll: (params?: ReportedMessageListParams) =>
+    client.get<ReportedMessageListResponse>('/reported-messages/', { params }),
 
   getById: (id: number) =>
     client.get<ReportedMessage>(`/reported-messages/${id}`),

@@ -69,7 +69,8 @@ test('approval refreshes raw template responses in the library and campaign sele
       templateReads++;
       data = approved ? [template] : [];
     } else if (config.url === '/reported-messages/' && config.method === 'get') {
-      data = [{ ...report, status: approved ? 'approved' : 'pending', converted_template_id: approved ? 42 : 0 }];
+      const msg = { ...report, status: approved ? 'approved' : 'pending', converted_template_id: approved ? 42 : 0 };
+      data = { data: [msg], total: 1, page: 1, per_page: 20 };
     } else if (config.url === '/reported-messages/1/approve' && config.method === 'post') {
       expect(JSON.parse(config.data)).toEqual({ name: template.name });
       approved = true;
@@ -99,7 +100,7 @@ test('a failed approval stays visible and does not create a template', async () 
   client.defaults.adapter = async (config) => {
     if (config.method === 'post') throw new AxiosError('Conflict', 'ERR_BAD_REQUEST', config);
     return {
-      data: config.url === '/templates/' ? [] : [report],
+      data: config.url === '/templates/' ? [] : { data: [report], total: 1, page: 1, per_page: 20 },
       status: 200, statusText: 'OK', headers: {}, config,
     };
   };
@@ -138,7 +139,7 @@ test('failed rejection leaves the pending report available with an error', async
   client.defaults.adapter = async (config) => {
     if (config.method === 'post') throw new AxiosError('Conflict', 'ERR_BAD_REQUEST', config);
     return {
-      data: config.url === '/templates/' ? [] : [report],
+      data: config.url === '/templates/' ? [] : { data: [report], total: 1, page: 1, per_page: 20 },
       status: 200, statusText: 'OK', headers: {}, config,
     };
   };
