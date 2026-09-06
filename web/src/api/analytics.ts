@@ -1,23 +1,23 @@
 import client from './client';
-import type { ApiResponse, AnalyticsOverview, TimelineData, DepartmentStats } from '../types';
+import type { AnalyticsOverview, TimelineData, DepartmentStats } from '../types';
 
 export const analyticsApi = {
   getOverview: () =>
-    client.get<ApiResponse<AnalyticsOverview>>('/analytics/overview'),
+    client.get<AnalyticsOverview>('/analytics/overview'),
 
   getTimeline: (campaignId?: number) =>
-    client.get<ApiResponse<TimelineData[]>>(
+    client.get<TimelineData[]>(
       campaignId ? `/analytics/campaigns/${campaignId}/timeline` : '/analytics/timeline'
     ),
 
   getDepartments: () =>
-    client.get<ApiResponse<DepartmentStats[]>>('/analytics/departments'),
+    client.get<DepartmentStats[]>('/analytics/departments'),
 
   getTrends: (period: string = '30d') =>
-    client.get<ApiResponse<TimelineData[]>>('/analytics/trends', { params: { period } }),
+    client.get<TimelineData[]>('/analytics/trends', { params: { period } }),
 
   getRiskScore: () =>
-    client.get<ApiResponse<{ score: number }>>('/analytics/risk-score'),
+    client.get<{ score: number }>('/analytics/risk-score'),
 
   export: (format: 'csv' | 'pdf' | 'xlsx', campaignId?: number) =>
     client.get<Blob>('/analytics/export', {

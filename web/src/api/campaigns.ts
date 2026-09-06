@@ -20,7 +20,7 @@ export const campaignsApi = {
     client.get<ApiResponse<Campaign>>(`/campaigns/${id}`),
 
   getSummary: () =>
-    client.get<ApiResponse<{ campaigns: Campaign[] }>>('/campaigns/summary'),
+    client.get<{ total: number; campaigns: Campaign[] }>('/campaigns/summary'),
 
   getResults: (id: number) =>
     client.get<ApiResponse<CampaignResult[]>>(`/campaigns/${id}/results`),

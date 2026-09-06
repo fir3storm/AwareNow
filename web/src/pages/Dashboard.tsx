@@ -1,34 +1,94 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Mail, MousePointer, Eye, AlertTriangle, TrendingUp, Users } from 'lucide-react';
 import { Card, StatCard } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { analyticsApi } from '../api/analytics';
 import { campaignsApi } from '../api/campaigns';
 
+type ExportFormat = 'csv' | 'pdf' | 'xlsx';
+
 export function Dashboard() {
-  const { data: overview, isLoading: overviewLoading } = useQuery({
+  const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const { data: overview, isLoading: overviewLoading, isError: overviewError } = useQuery({
     queryKey: ['analytics-overview'],
     queryFn: async () => {
       const res = await analyticsApi.getOverview();
-      return res.data.data;
+      return res.data;
     },
   });
 
-  const { data: campaigns, isLoading: campaignsLoading } = useQuery({
+  const { data: campaigns, isLoading: campaignsLoading, isError: campaignsError } = useQuery({
     queryKey: ['campaigns-summary'],
     queryFn: async () => {
       const res = await campaignsApi.getSummary();
-      return res.data.data.campaigns;
+      return res.data.campaigns;
     },
   });
 
   const isLoading = overviewLoading || campaignsLoading;
+  const isError = overviewError || campaignsError;
+
+  const handleExport = async (format: ExportFormat) => {
+    setExportError(null);
+    setExportingFormat(format);
+    try {
+      const res = await analyticsApi.export(format);
+      const url = URL.createObjectURL(res.data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `analytics-export.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError(
+        `Could not export analytics as ${format.toUpperCase()}. Please try again later.`
+      );
+    } finally {
+      setExportingFormat(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Security awareness overview</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Security awareness overview</p>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500 mr-1">Export:</span>
+          {(['csv', 'pdf', 'xlsx'] as ExportFormat[]).map((format) => (
+            <Button
+              key={format}
+              variant="secondary"
+              size="sm"
+              loading={exportingFormat === format}
+              disabled={exportingFormat !== null}
+              onClick={() => handleExport(format)}
+            >
+              {format.toUpperCase()}
+            </Button>
+          ))}
+        </div>
       </div>
+
+      {exportError && (
+        <p role="alert" className="text-red-700">
+          {exportError}
+        </p>
+      )}
+
+      {isError && (
+        <p role="alert" className="text-red-700">
+          Could not load dashboard data. Refresh the page to try again.
+        </p>
+      )}
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
